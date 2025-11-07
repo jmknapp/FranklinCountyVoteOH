@@ -1,0 +1,26 @@
+base_year: 2025
+crs: EPSG:3734
+id_fields:
+  '2025': NAME
+  '2024': NAME
+paths:
+  shapefiles:
+    '2024': data/raw/precincts_2025/VotingPrecinct.shp
+    '2025': data/raw/precincts_2025/VotingPrecinct.shp
+  results_csv:
+    '2024': data/raw/results_2024.csv
+weights:
+  blocks_gpkg: null
+  block_pop_field: null
+  block_year_map: {}
+output:
+  harmonized_gpkg: data/processed/harmonized.gpkg
+  timeseries_csv: data/processed/timeseries_per_precinct.csv
+  county_aggregates_csv: data/processed/county_aggregates.csv
+  maps_dir: data/processed/maps
+  interactive_dir: data/processed/interactive
+  crosswalk_dir: data/interim/crosswalks
+options:
+  overlap_warning_threshold: 0.98
+  sliver_tolerance: 1e-9
+  default_weight_method: area
