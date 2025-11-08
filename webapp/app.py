@@ -329,6 +329,70 @@ def index():
     races = get_available_races()
     return render_template('index.html', races=races)
 
+@app.route('/test')
+def test_interactive():
+    """Link to test interactive maps."""
+    return '''
+    <html>
+    <head>
+        <title>Interactive Map Tests</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+            h1 { color: #667eea; }
+            .map-link { display: block; padding: 15px; margin: 10px 0; background: #f0f0f0; 
+                        border-radius: 8px; text-decoration: none; color: #333; border-left: 4px solid #667eea; }
+            .map-link:hover { background: #e0e0e0; }
+            .back { margin-top: 30px; }
+        </style>
+    </head>
+    <body>
+        <h1>🗺️ Interactive Map Tests</h1>
+        <p>These are test versions of the comparison maps using Folium for interactivity.</p>
+        <p><strong>Features:</strong> Zoom with mouse wheel, pan by dragging, hover for details</p>
+        
+        <a class="map-link" href="/test/issue1">
+            <strong>Test Map 1:</strong> 2023 Issue 1 (Abortion Rights)<br>
+            <small>Interactive choropleth with tooltips and street basemap</small>
+        </a>
+        
+        <a class="map-link" href="/test/president">
+            <strong>Test Map 2:</strong> 2024 President (Harris vs Trump)<br>
+            <small>Interactive choropleth with tooltips and street basemap</small>
+        </a>
+        
+        <a class="map-link" href="/test/difference">
+            <strong>Test Map 3:</strong> Difference Map (Issue 1 - President)<br>
+            <small>Purple-green comparison showing where each performed better</small>
+        </a>
+        
+        <div class="back">
+            <a href="/">← Back to Main App</a>
+        </div>
+    </body>
+    </html>
+    '''
+
+@app.route('/test/<map_name>')
+def serve_test_map(map_name):
+    """Serve test interactive maps."""
+    from flask import send_file
+    import os
+    
+    map_files = {
+        'issue1': PROJECT_ROOT / 'test_map_2023_issue1.html',
+        'president': PROJECT_ROOT / 'test_map_2024_president.html',
+        'difference': PROJECT_ROOT / 'test_map_difference.html'
+    }
+    
+    if map_name not in map_files:
+        return "Map not found", 404
+    
+    file_path = map_files[map_name]
+    if not file_path.exists():
+        return f"Map file not found. Run: python scripts/test_interactive_maps.py", 404
+    
+    return send_file(file_path, mimetype='text/html')
+
 @app.route('/api/races')
 def api_races():
     """API endpoint to get available races."""
