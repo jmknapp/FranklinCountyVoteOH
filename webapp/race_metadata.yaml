@@ -2,6 +2,15 @@
 # Defines display names, types, and vote orientation for each race file
 
 races:
+  # 2025 Elections
+  results_2025_columbus_cd7:
+    display_name: "2025 Columbus City Council District 7"
+    race_type: "City Council"
+    year: 2025
+    candidates: "Vogel (Progressive) vs Ross (Conservative)"
+    description: "Non-partisan city council race"
+    blue_side: "D"  # D_votes = Vogel (progressive)
+    
   # 2024 Elections
   results_2024:
     display_name: "2024 President"
