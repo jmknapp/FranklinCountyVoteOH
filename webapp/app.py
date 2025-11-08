@@ -95,13 +95,50 @@ def get_shapefile_for_year(year):
     closest_year, closest_dir = min(available_years, key=lambda x: abs(x[0] - year_int))
     
     # Find shapefile in directory
-    shp_files = list(closest_dir.glob('*.shp'))
-    if not shp_files:
-        return None
+    # Try multiple common naming patterns
+    possible_names = [
+        'VotingPrecinct.shp',
+        'Voting_Precinct.shp',
+        'Voting-Precincts-G*.shp',
+        'Precincts*.shp'
+    ]
     
-    # Load shapefile
-    shp = gpd.read_file(shp_files[0])
-    shp = shp.to_crs('EPSG:3747')
+    shp_file = None
+    for pattern in possible_names:
+        if '*' in pattern:
+            matches = list(closest_dir.glob(pattern))
+            if matches:
+                shp_file = matches[0]
+                break
+        else:
+            candidate = closest_dir / pattern
+            if candidate.exists():
+                shp_file = candidate
+                break
+    
+    if not shp_file:
+        # Fallback: just get any .shp file
+        shp_files = list(closest_dir.glob('*.shp'))
+        if not shp_files:
+            return None
+        shp_file = shp_files[0]
+    
+    # Load shapefile - try/except in case file is corrupted
+    try:
+        shp = gpd.read_file(shp_file)
+        shp = shp.to_crs('EPSG:3747')
+    except Exception as e:
+        # Try other .shp files in the directory
+        for alt_shp in closest_dir.glob('*.shp'):
+            if alt_shp != shp_file:
+                try:
+                    shp = gpd.read_file(alt_shp)
+                    shp = shp.to_crs('EPSG:3747')
+                    break
+                except:
+                    continue
+        else:
+            return None
     
     # Cache it
     SHAPEFILE_CACHE[cache_key] = shp
