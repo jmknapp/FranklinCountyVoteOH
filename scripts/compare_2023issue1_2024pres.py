@@ -63,8 +63,22 @@ def main():
     gdf_2024['total'] = gdf_2024['D_votes'] + gdf_2024['R_votes']
     gdf_2024['D_share'] = gdf_2024['D_votes'] / gdf_2024['total']
 
-    # Create comparison map
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+    # Compute difference (need to align by precinct)
+    # Merge to get matching precincts
+    diff_df = gdf_2023[[id_col_2023, 'D_share', 'geometry']].merge(
+        gdf_2024[[id_col_2024, 'D_share']],
+        left_on=id_col_2023,
+        right_on=id_col_2024,
+        suffixes=('_2023', '_2024')
+    )
+    diff_df['difference'] = diff_df['D_share_2023'] - diff_df['D_share_2024']
+    
+    print(f'\nMatched {len(diff_df)} precincts for difference calculation')
+    print(f'Mean difference: {diff_df["difference"].mean():.3f} ({diff_df["difference"].mean()*100:.1f} pp)')
+    print(f'Std deviation: {diff_df["difference"].std():.3f}')
+
+    # Create comparison map with 3 panels
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(28, 10))
 
     # 2023 Issue 1 (Abortion Rights)
     gdf_2023.plot(column='D_share', ax=ax1, legend=True, cmap='RdBu',
@@ -79,6 +93,19 @@ def main():
                   legend_kwds={'label': 'Democratic Two-Party Share', 'shrink': 0.8})
     ax2.set_title('2024 President (Harris vs Trump)', fontsize=16, fontweight='bold')
     ax2.axis('off')
+
+    # Difference map (Issue 1 - Presidential)
+    # Convert to GeoDataFrame for plotting
+    gdf_diff = gpd.GeoDataFrame(diff_df, geometry='geometry', crs=shp_2023.crs)
+    
+    # Use diverging colormap centered at 0
+    vmax_diff = max(abs(gdf_diff['difference'].min()), abs(gdf_diff['difference'].max()))
+    gdf_diff.plot(column='difference', ax=ax3, legend=True, cmap='RdBu',
+                  vmin=-vmax_diff, vmax=vmax_diff, edgecolor='gray', linewidth=0.2,
+                  legend_kwds={'label': 'Difference (Issue 1 - Presidential)', 'shrink': 0.8})
+    ax3.set_title('Difference: Issue 1 outperformance\n(Blue = Issue 1 > Harris, Red = Harris > Issue 1)', 
+                  fontsize=16, fontweight='bold')
+    ax3.axis('off')
 
     plt.tight_layout()
     plt.savefig('data/processed/maps/2023_issue1_vs_2024_pres_comparison.png', dpi=300, bbox_inches='tight')
@@ -96,8 +123,13 @@ def main():
     print('\n=== COMPARISON SUMMARY ===')
     print(f'2023 Issue 1 (Abortion): {pct_yes_2023:.1f}% Yes')
     print(f'2024 Presidential: {pct_d_2024:.1f}% Democratic')
-    print(f'Difference: {pct_yes_2023 - pct_d_2024:.1f} percentage points')
-    print('\n✓ Saved comparison map: data/processed/maps/2023_issue1_vs_2024_pres_comparison.png')
+    print(f'Overall difference: {pct_yes_2023 - pct_d_2024:.1f} percentage points')
+    print(f'\nPrecinct-level difference statistics:')
+    print(f'  Mean: {diff_df["difference"].mean()*100:.1f} pp')
+    print(f'  Std Dev: {diff_df["difference"].std()*100:.1f} pp')
+    print(f'  Min: {diff_df["difference"].min()*100:.1f} pp (most Harris > Issue 1)')
+    print(f'  Max: {diff_df["difference"].max()*100:.1f} pp (most Issue 1 > Harris)')
+    print('\n✓ Saved 3-panel comparison map: data/processed/maps/2023_issue1_vs_2024_pres_comparison.png')
 
 if __name__ == '__main__':
     main()
