@@ -268,14 +268,14 @@ def create_comparison_map(race1_id, race2_id):
     # Panel 1: Race 1
     gdf1.plot(column='D_share', ax=ax1, legend=True, cmap='RdBu',
               vmin=0, vmax=1, edgecolor='gray', linewidth=0.2,
-              legend_kwds={'label': 'Democratic/Yes Share', 'shrink': 0.8})
+              legend_kwds={'label': 'Democratic Share', 'shrink': 0.8})
     ax1.set_title(info1['display_name'], fontsize=16, fontweight='bold')
     ax1.axis('off')
     
     # Panel 2: Race 2
     gdf2.plot(column='D_share', ax=ax2, legend=True, cmap='RdBu',
               vmin=0, vmax=1, edgecolor='gray', linewidth=0.2,
-              legend_kwds={'label': 'Democratic/Yes Share', 'shrink': 0.8})
+              legend_kwds={'label': 'Democratic Share', 'shrink': 0.8})
     ax2.set_title(info2['display_name'], fontsize=16, fontweight='bold')
     ax2.axis('off')
     
