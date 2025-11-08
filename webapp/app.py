@@ -248,21 +248,21 @@ def create_comparison_map(race1_id, race2_id):
     stats = {
         'race1': {
             'name': info1['display_name'],
-            'pct': gdf1['D_share'].mean() * 100,
-            'total_d': gdf1['D_votes'].sum(),
-            'total_r': gdf1['R_votes'].sum()
+            'pct': float(gdf1['D_share'].mean() * 100),
+            'total_d': int(gdf1['D_votes'].sum()),
+            'total_r': int(gdf1['R_votes'].sum())
         },
         'race2': {
             'name': info2['display_name'],
-            'pct': gdf2['D_share'].mean() * 100,
-            'total_d': gdf2['D_votes'].sum(),
-            'total_r': gdf2['R_votes'].sum()
+            'pct': float(gdf2['D_share'].mean() * 100),
+            'total_d': int(gdf2['D_votes'].sum()),
+            'total_r': int(gdf2['R_votes'].sum())
         },
         'difference': {
-            'mean': diff_df['difference'].mean() * 100,
-            'std': diff_df['difference'].std() * 100,
-            'min': diff_df['difference'].min() * 100,
-            'max': diff_df['difference'].max() * 100
+            'mean': float(diff_df['difference'].mean() * 100),
+            'std': float(diff_df['difference'].std() * 100),
+            'min': float(diff_df['difference'].min() * 100),
+            'max': float(diff_df['difference'].max() * 100)
         }
     }
     
