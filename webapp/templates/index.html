@@ -240,7 +240,11 @@
                     <select id="race1">
                         <option value="">-- Select a race --</option>
                         {% for race in races %}
-                        <option value="{{ race.id }}">{{ race.display_name }}</option>
+                        <option value="{{ race.id }}" 
+                                data-candidates="{{ race.candidates }}"
+                                data-description="{{ race.description }}">
+                            {{ race.display_name }}{% if race.candidates %} - {{ race.candidates }}{% endif %}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -250,7 +254,11 @@
                     <select id="race2">
                         <option value="">-- Select a race --</option>
                         {% for race in races %}
-                        <option value="{{ race.id }}">{{ race.display_name }}</option>
+                        <option value="{{ race.id }}"
+                                data-candidates="{{ race.candidates }}"
+                                data-description="{{ race.description }}">
+                            {{ race.display_name }}{% if race.candidates %} - {{ race.candidates }}{% endif %}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>

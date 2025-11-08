@@ -12,6 +12,7 @@ import base64
 
 import geopandas as gpd
 import pandas as pd
+import yaml
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
@@ -23,9 +24,17 @@ app = Flask(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
 SHAPEFILE_DIR = PROJECT_ROOT / 'data' / 'raw'
+METADATA_FILE = Path(__file__).parent / 'race_metadata.yaml'
 
 # Cache for shapefiles to avoid reloading
 SHAPEFILE_CACHE = {}
+
+# Load race metadata
+RACE_METADATA = {}
+if METADATA_FILE.exists():
+    with open(METADATA_FILE, 'r') as f:
+        metadata_config = yaml.safe_load(f)
+        RACE_METADATA = metadata_config.get('races', {})
 
 def get_available_races():
     """Scan data/raw directory for available race results."""
@@ -34,35 +43,49 @@ def get_available_races():
     for csv_file in DATA_DIR.glob('results_*.csv'):
         filename = csv_file.stem  # Remove .csv extension
         
-        # Parse filename to extract race info
-        # Format: results_YEAR[_race_type][_additional_info].csv
-        match = re.match(r'results_(\d{4})(?:_(.+))?', filename)
-        if match:
-            year = match.group(1)
-            race_type = match.group(2) if match.group(2) else 'president'
-            
-            # Create display name
-            if 'issue1' in race_type:
-                display_name = f"{year} State Issue 1 (Abortion Rights)"
-            elif 'issue2' in race_type:
-                display_name = f"{year} State Issue 2 (Cannabis)"
-            elif 'house_cd' in race_type:
-                cd = race_type.split('_')[-1].upper()
-                display_name = f"{year} U.S. House {cd}"
-            elif race_type in ['president', 'presidential']:
-                display_name = f"{year} President"
-            elif race_type == 'governor':
-                display_name = f"{year} Governor"
-            else:
-                display_name = f"{year} {race_type.replace('_', ' ').title()}"
-            
+        # Check if we have metadata for this race
+        if filename in RACE_METADATA:
+            metadata = RACE_METADATA[filename]
             races.append({
                 'id': filename,
-                'year': year,
-                'type': race_type,
-                'display_name': display_name,
+                'year': str(metadata.get('year', '')),
+                'type': metadata.get('race_type', ''),
+                'display_name': metadata.get('display_name', filename),
+                'candidates': metadata.get('candidates', ''),
+                'description': metadata.get('description', ''),
                 'file_path': str(csv_file)
             })
+        else:
+            # Fallback: parse filename if no metadata
+            match = re.match(r'results_(\d{4})(?:_(.+))?', filename)
+            if match:
+                year = match.group(1)
+                race_type = match.group(2) if match.group(2) else 'president'
+                
+                # Create display name
+                if 'issue1' in race_type:
+                    display_name = f"{year} State Issue 1"
+                elif 'issue2' in race_type:
+                    display_name = f"{year} State Issue 2"
+                elif 'house_cd' in race_type:
+                    cd = race_type.split('_')[-1].upper()
+                    display_name = f"{year} U.S. House {cd}"
+                elif race_type in ['president', 'presidential']:
+                    display_name = f"{year} President"
+                elif race_type == 'governor':
+                    display_name = f"{year} Governor"
+                else:
+                    display_name = f"{year} {race_type.replace('_', ' ').title()}"
+                
+                races.append({
+                    'id': filename,
+                    'year': year,
+                    'type': race_type,
+                    'display_name': display_name,
+                    'candidates': '',
+                    'description': '',
+                    'file_path': str(csv_file)
+                })
     
     # Sort by year (descending) then by type
     races.sort(key=lambda x: (x['year'], x['type']), reverse=True)

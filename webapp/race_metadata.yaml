@@ -1,0 +1,139 @@
+# Race Metadata
+# Defines display names, types, and vote orientation for each race file
+
+races:
+  # 2024 Elections
+  results_2024:
+    display_name: "2024 President"
+    race_type: "Presidential"
+    year: 2024
+    candidates: "Harris (D) vs Trump (R)"
+    blue_side: "D"  # D_votes = blue (Democratic)
+    
+  results_2024_senate:
+    display_name: "2024 U.S. Senate"
+    race_type: "U.S. Senate"
+    year: 2024
+    candidates: "Brown (D) vs Moreno (R)"
+    blue_side: "D"
+    
+  results_2024_house_cd03:
+    display_name: "2024 U.S. House CD-03"
+    race_type: "U.S. House"
+    year: 2024
+    candidates: "Beatty (D) vs Young (R)"
+    blue_side: "D"
+    
+  results_2024_house_cd15:
+    display_name: "2024 U.S. House CD-15"
+    race_type: "U.S. House"
+    year: 2024
+    candidates: "Miller (D) vs Carey (R)"
+    blue_side: "D"
+    
+  # 2023 Ballot Issues
+  results_2023_issue1:
+    display_name: "2023 Issue 1 (Abortion Rights)"
+    race_type: "Ballot Issue"
+    year: 2023
+    description: "Constitutional amendment protecting abortion rights"
+    blue_side: "D"  # D_votes = Yes (pro-choice)
+    blue_label: "Yes (Pro-Choice)"
+    red_label: "No (Pro-Life)"
+    
+  results_2023_issue2:
+    display_name: "2023 Issue 2 (Cannabis)"
+    race_type: "Ballot Issue"
+    year: 2023
+    description: "Legalize recreational marijuana"
+    blue_side: "D"  # D_votes = Yes (legalization)
+    blue_label: "Yes (Legalize)"
+    red_label: "No (Oppose)"
+    
+  # 2022 Elections
+  results_2022:
+    display_name: "2022 Governor"
+    race_type: "Governor"
+    year: 2022
+    candidates: "Whaley (D) vs DeWine (R)"
+    blue_side: "D"
+    
+  results_2022_house_cd03:
+    display_name: "2022 U.S. House CD-03"
+    race_type: "U.S. House"
+    year: 2022
+    candidates: "Beatty (D) vs Bush (R)"
+    blue_side: "D"
+    
+  results_2022_house_cd15:
+    display_name: "2022 U.S. House CD-15"
+    race_type: "U.S. House"
+    year: 2022
+    candidates: "Josephson (D) vs Carey (R)"
+    blue_side: "D"
+    
+  # 2020 Elections
+  results_2020:
+    display_name: "2020 President"
+    race_type: "Presidential"
+    year: 2020
+    candidates: "Biden (D) vs Trump (R)"
+    blue_side: "D"
+    
+  results_2020_house_cd03:
+    display_name: "2020 U.S. House CD-03"
+    race_type: "U.S. House"
+    year: 2020
+    candidates: "Beatty (D) vs Pryce (R)"
+    blue_side: "D"
+    
+  results_2020_house_cd15:
+    display_name: "2020 U.S. House CD-15"
+    race_type: "U.S. House"
+    year: 2020
+    candidates: "Whitaker (D) vs Stivers (R)"
+    blue_side: "D"
+    
+  # 2018 Elections
+  results_2018:
+    display_name: "2018 Governor"
+    race_type: "Governor"
+    year: 2018
+    candidates: "Cordray (D) vs DeWine (R)"
+    blue_side: "D"
+    
+  results_2018_house_cd-03:
+    display_name: "2018 U.S. House CD-03"
+    race_type: "U.S. House"
+    year: 2018
+    candidates: "Beatty (D) vs Burgess (R)"
+    blue_side: "D"
+    
+  results_2018_house_cd03:
+    display_name: "2018 U.S. House CD-03"
+    race_type: "U.S. House"
+    year: 2018
+    candidates: "Beatty (D) vs Burgess (R)"
+    blue_side: "D"
+    
+  results_2018_house_cd-12:
+    display_name: "2018 U.S. House CD-12"
+    race_type: "U.S. House"
+    year: 2018
+    candidates: "O'Connor (D) vs Balderson (R)"
+    blue_side: "D"
+    
+  results_2018_house_cd-15:
+    display_name: "2018 U.S. House CD-15"
+    race_type: "U.S. House"
+    year: 2018
+    candidates: "Neal (D) vs Stivers (R)"
+    blue_side: "D"
+    
+  results_2018_house_cd15:
+    display_name: "2018 U.S. House CD-15"
+    race_type: "U.S. House"
+    year: 2018
+    candidates: "Neal (D) vs Stivers (R)"
+    blue_side: "D"
+

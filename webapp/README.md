@@ -40,11 +40,11 @@ cd webapp
 python app.py
 ```
 
-The app will start on `http://localhost:5000`
+The app will start on `http://localhost:5050`
 
 ### 3. Open in Browser
 
-Navigate to `http://localhost:5000` in your web browser.
+Navigate to `http://localhost:5050` in your web browser.
 
 ## Usage
 
