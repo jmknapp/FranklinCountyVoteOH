@@ -36,6 +36,35 @@ if METADATA_FILE.exists():
         metadata_config = yaml.safe_load(f)
         RACE_METADATA = metadata_config.get('races', {})
 
+def normalize_precinct_name(name):
+    """
+    Normalize precinct names to a standard format for cross-year comparisons.
+    Converts abbreviations to full names to ensure consistency.
+    """
+    name = str(name).strip().upper()
+    
+    # Standardize common abbreviations to full names
+    replacements = {
+        'COLS ': 'COLUMBUS ',
+        'REYN ': 'REYNOLDSBURG ',
+        'UPPER ARL ': 'UPPER ARLINGTON ',
+        'WORTH ': 'WORTHINGTON ',
+        'CANAL WIN ': 'CANAL WINCHESTER ',
+        'GAHANNA ': 'GAHANNA ',
+        'GAH ': 'GAHANNA ',
+        'HILLIARD ': 'HILLIARD ',
+        'HIL ': 'HILLIARD ',
+        'WESTERVILLE ': 'WESTERVILLE ',
+        'WEST ': 'WESTERVILLE ',
+    }
+    
+    for abbrev, full in replacements.items():
+        if name.startswith(abbrev):
+            name = name.replace(abbrev, full, 1)
+            break
+    
+    return name
+
 def get_available_races():
     """Scan data/raw directory for available race results."""
     races = []
@@ -214,17 +243,20 @@ def create_comparison_map(race1_id, race2_id):
         return None, "Failed to load race data"
     
     # Compute difference
-    # Need to align by precinct
+    # Need to align by precinct using normalized names for cross-year comparison
     id_col = 'NAME'
     for col in ['NAME', 'PRECINCT', 'PRECINCT_N', 'PREC_NAME']:
         if col in gdf1.columns:
             id_col = col
             break
     
-    diff_df = gdf1[[id_col, 'D_share', 'geometry']].merge(
-        gdf2[[id_col, 'D_share']],
-        left_on=id_col,
-        right_on=id_col,
+    # Create normalized precinct columns for matching
+    gdf1['precinct_normalized'] = gdf1[id_col].apply(normalize_precinct_name)
+    gdf2['precinct_normalized'] = gdf2[id_col].apply(normalize_precinct_name)
+    
+    diff_df = gdf1[[id_col, 'precinct_normalized', 'D_share', 'geometry']].merge(
+        gdf2[['precinct_normalized', 'D_share']],
+        on='precinct_normalized',
         suffixes=('_1', '_2')
     )
     diff_df['difference'] = diff_df['D_share_1'] - diff_df['D_share_2']
