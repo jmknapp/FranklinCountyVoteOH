@@ -19,9 +19,10 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# Configuration
-DATA_DIR = Path('data/raw')
-SHAPEFILE_DIR = Path('data/raw')
+# Configuration - use absolute paths relative to project root
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
+SHAPEFILE_DIR = PROJECT_ROOT / 'data' / 'raw'
 
 # Cache for shapefiles to avoid reloading
 SHAPEFILE_CACHE = {}
@@ -269,5 +270,5 @@ def api_compare():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5050)
 
