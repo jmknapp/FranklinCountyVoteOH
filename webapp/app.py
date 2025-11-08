@@ -279,13 +279,13 @@ def create_comparison_map(race1_id, race2_id):
     ax2.set_title(info2['display_name'], fontsize=16, fontweight='bold')
     ax2.axis('off')
     
-    # Panel 3: Difference
+    # Panel 3: Difference (using purple-green to avoid R/D confusion)
     vmax_diff = max(abs(gdf_diff['difference'].min()), abs(gdf_diff['difference'].max()))
-    gdf_diff.plot(column='difference', ax=ax3, legend=True, cmap='RdBu',
+    gdf_diff.plot(column='difference', ax=ax3, legend=True, cmap='PRGn',
                   vmin=-vmax_diff, vmax=vmax_diff, edgecolor='gray', linewidth=0.2,
                   legend_kwds={'label': 'Difference (Race 1 - Race 2)', 'shrink': 0.8})
-    ax3.set_title(f'Difference\n(Blue = {info1["year"]} higher, Red = {info2["year"]} higher)', 
-                  fontsize=16, fontweight='bold')
+    ax3.set_title(f'Difference\n(Green = {info1["display_name"]} higher\nPurple = {info2["display_name"]} higher)', 
+                  fontsize=14, fontweight='bold')
     ax3.axis('off')
     
     plt.tight_layout()
