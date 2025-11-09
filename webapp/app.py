@@ -181,10 +181,21 @@ def get_shapefile_for_year(year):
     # Load shapefile - try/except in case file is corrupted
     try:
         shp = gpd.read_file(shp_file)
-        # If no CRS defined, assume Ohio State Plane South (common for Franklin County)
+        # If no CRS defined, try both Ohio CRS and pick the one that makes sense
         if shp.crs is None:
-            shp = shp.set_crs('EPSG:3747')
-        elif shp.crs != 'EPSG:3747':
+            # Try Ohio North first, check if it gives reasonable Franklin County coordinates
+            shp_test = shp.copy().set_crs('EPSG:3735')
+            test_wgs84 = shp_test.to_crs('EPSG:4326')
+            bounds_wgs84 = test_wgs84.total_bounds
+            
+            # Franklin County should be: Lon -83.3 to -82.7, Lat 39.7 to 40.2
+            if -84 < bounds_wgs84[0] < -82 and 39 < bounds_wgs84[1] < 41:
+                shp = shp.set_crs('EPSG:3735')  # Ohio North is correct
+            else:
+                shp = shp.set_crs('EPSG:3747')  # Fall back to Ohio South
+        
+        # Standardize to Ohio South for consistency
+        if shp.crs.to_string() != 'EPSG:3747':
             shp = shp.to_crs('EPSG:3747')
     except Exception as e:
         # Try other .shp files in the directory
@@ -193,8 +204,14 @@ def get_shapefile_for_year(year):
                 try:
                     shp = gpd.read_file(alt_shp)
                     if shp.crs is None:
-                        shp = shp.set_crs('EPSG:3747')
-                    elif shp.crs != 'EPSG:3747':
+                        shp_test = shp.copy().set_crs('EPSG:3735')
+                        test_wgs84 = shp_test.to_crs('EPSG:4326')
+                        bounds_wgs84 = test_wgs84.total_bounds
+                        if -84 < bounds_wgs84[0] < -82 and 39 < bounds_wgs84[1] < 41:
+                            shp = shp.set_crs('EPSG:3735')
+                        else:
+                            shp = shp.set_crs('EPSG:3747')
+                    if shp.crs.to_string() != 'EPSG:3747':
                         shp = shp.to_crs('EPSG:3747')
                     break
                 except:
