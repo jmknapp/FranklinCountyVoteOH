@@ -42,29 +42,37 @@ if METADATA_FILE.exists():
 def normalize_precinct_name(name):
     """
     Normalize precinct names to a standard format for cross-year comparisons.
-    Converts abbreviations to full names to ensure consistency.
+    Converts abbreviations to full names and zero-pads ward numbers.
     """
+    import re
+    
     name = str(name).strip().upper()
     
     # Standardize common abbreviations to full names
     replacements = {
         'COLS ': 'COLUMBUS ',
+        'COLS-': 'COLUMBUS-',
+        'REYNS ': 'REYNOLDSBURG ',
         'REYN ': 'REYNOLDSBURG ',
+        'UA ': 'UPPER ARLINGTON ',
         'UPPER ARL ': 'UPPER ARLINGTON ',
         'WORTH ': 'WORTHINGTON ',
-        'CANAL WIN ': 'CANAL WINCHESTER ',
-        'GAHANNA ': 'GAHANNA ',
+        'CANAL WIN': 'CANAL WINCHESTER',
         'GAH ': 'GAHANNA ',
-        'HILLIARD ': 'HILLIARD ',
+        'HILL ': 'HILLIARD ',
         'HIL ': 'HILLIARD ',
-        'WESTERVILLE ': 'WESTERVILLE ',
-        'WEST ': 'WESTERVILLE ',
+        'DUB ': 'DUBLIN ',
+        'GRANDVIEW': 'GRANDVIEW HEIGHTS',
     }
     
     for abbrev, full in replacements.items():
         if name.startswith(abbrev):
             name = name.replace(abbrev, full, 1)
             break
+    
+    # Zero-pad single-digit ward numbers
+    # Match patterns like "BEXLEY 1-A" or "COLUMBUS 2-B" and convert to "01-A", "02-B"
+    name = re.sub(r'(\s)(\d)(-[A-Z0-9])', r'\g<1>0\g<2>\g<3>', name)
     
     return name
 
