@@ -264,6 +264,20 @@
                 </div>
             </div>
             
+            <div style="margin-top: 20px; padding: 15px; background: #f7fafc; border-radius: 8px;">
+                <label style="font-weight: 600; color: #2d3748; margin-bottom: 10px; display: block;">Map Type:</label>
+                <div style="display: flex; gap: 20px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="mapMode" value="static" checked style="margin-right: 8px;">
+                        <span>📊 Static Maps (faster, image)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="mapMode" value="interactive" style="margin-right: 8px;">
+                        <span>🗺️ Interactive Maps (zoom, pan, tooltips)</span>
+                    </label>
+                </div>
+            </div>
+            
             <button id="compareBtn" onclick="compareRaces()">Generate Comparison</button>
         </div>
         
@@ -345,6 +359,7 @@
         async function compareRaces() {
             const race1 = document.getElementById('race1').value;
             const race2 = document.getElementById('race2').value;
+            const mode = document.querySelector('input[name="mapMode"]:checked').value;
             const errorDiv = document.getElementById('error');
             const loadingDiv = document.getElementById('loading');
             const resultsDiv = document.getElementById('results');
@@ -376,7 +391,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ race1, race2 })
+                    body: JSON.stringify({ race1, race2, mode })
                 });
                 
                 const data = await response.json();
@@ -385,10 +400,159 @@
                     throw new Error(data.error || 'Failed to generate comparison');
                 }
                 
-                // Display image
-                document.getElementById('comparisonImage').src = 'data:image/png;base64,' + data.image;
+                // Display maps based on mode
+                if (data.mode === 'interactive') {
+                    // Create container for 3 side-by-side interactive maps
+                    const mapContainer = document.getElementById('comparisonImage');
+                    mapContainer.style.display = 'none';  // Hide the img element
+                    
+                    // Create or get the interactive maps container
+                    let interactiveContainer = document.getElementById('interactiveMapsContainer');
+                    if (!interactiveContainer) {
+                        interactiveContainer = document.createElement('div');
+                        interactiveContainer.id = 'interactiveMapsContainer';
+                        interactiveContainer.style.display = 'grid';
+                        interactiveContainer.style.gridTemplateColumns = '1fr 1fr 1fr';
+                        interactiveContainer.style.gap = '10px';
+                        interactiveContainer.style.marginBottom = '30px';
+                        mapContainer.parentNode.insertBefore(interactiveContainer, mapContainer);
+                    }
+                    
+                    // Clear previous maps and insert new ones
+                    interactiveContainer.innerHTML = '';
+                    data.maps.forEach((mapHtml, idx) => {
+                        const mapDiv = document.createElement('div');
+                        mapDiv.style.width = '100%';
+                        mapDiv.style.height = '700px';
+                        mapDiv.style.border = '1px solid #ddd';
+                        mapDiv.style.borderRadius = '8px';
+                        mapDiv.style.overflow = 'hidden';
+                        mapDiv.style.position = 'relative';
+                        mapDiv.innerHTML = mapHtml;
+                        interactiveContainer.appendChild(mapDiv);
+                        
+                        // Force iframe to fill container completely
+                        setTimeout(() => {
+                            const iframe = mapDiv.querySelector('iframe');
+                            if (iframe) {
+                                iframe.style.width = '100%';
+                                iframe.style.height = '700px';
+                                iframe.style.border = 'none';
+                                iframe.style.display = 'block';
+                            }
+                        }, 100);
+                    });
+                    interactiveContainer.style.display = 'grid';
+                    
+                    // Synchronize the three maps after a brief delay to ensure they're loaded
+                    setTimeout(() => {
+                        try {
+                            // Search through all iframes (Folium creates maps in iframes)
+                            const iframes = document.querySelectorAll('#interactiveMapsContainer iframe');
+                            
+                            // First, force a resize on all maps to ensure they fill their containers
+                            iframes.forEach(iframe => {
+                                try {
+                                    const iframeWindow = iframe.contentWindow;
+                                    if (iframeWindow && iframeWindow.L && iframeWindow.L.Map) {
+                                        for (let key in iframeWindow) {
+                                            if (iframeWindow[key] instanceof iframeWindow.L.Map) {
+                                                iframeWindow[key].invalidateSize();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not resize map:', e);
+                                }
+                            });
+                            
+                            // Find all Leaflet map objects in the page
+                            const mapObjects = [];
+                            
+                            iframes.forEach(iframe => {
+                                try {
+                                    const iframeWindow = iframe.contentWindow;
+                                    if (iframeWindow && iframeWindow.L && iframeWindow.L.Map) {
+                                        // Find the map object in the iframe
+                                        for (let key in iframeWindow) {
+                                            if (iframeWindow[key] instanceof iframeWindow.L.Map) {
+                                                mapObjects.push(iframeWindow[key]);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not access iframe:', e);
+                                }
+                            });
+                            
+                            // If we found all 3 maps, synchronize them
+                            if (mapObjects.length === 3) {
+                                const [map1, map2, map3] = mapObjects;
+                                
+                                // Sync zoom and pan between all three maps
+                                map1.on('moveend', function() {
+                                    if (!map1._syncMoving) {
+                                        map2._syncMoving = true;
+                                        map3._syncMoving = true;
+                                        map2.setView(map1.getCenter(), map1.getZoom(), {animate: false});
+                                        map3.setView(map1.getCenter(), map1.getZoom(), {animate: false});
+                                        setTimeout(() => {
+                                            map2._syncMoving = false;
+                                            map3._syncMoving = false;
+                                        }, 100);
+                                    }
+                                });
+                                
+                                map2.on('moveend', function() {
+                                    if (!map2._syncMoving) {
+                                        map1._syncMoving = true;
+                                        map3._syncMoving = true;
+                                        map1.setView(map2.getCenter(), map2.getZoom(), {animate: false});
+                                        map3.setView(map2.getCenter(), map2.getZoom(), {animate: false});
+                                        setTimeout(() => {
+                                            map1._syncMoving = false;
+                                            map3._syncMoving = false;
+                                        }, 100);
+                                    }
+                                });
+                                
+                                map3.on('moveend', function() {
+                                    if (!map3._syncMoving) {
+                                        map1._syncMoving = true;
+                                        map2._syncMoving = true;
+                                        map1.setView(map3.getCenter(), map3.getZoom(), {animate: false});
+                                        map2.setView(map3.getCenter(), map3.getZoom(), {animate: false});
+                                        setTimeout(() => {
+                                            map1._syncMoving = false;
+                                            map2._syncMoving = false;
+                                        }, 100);
+                                    }
+                                });
+                                
+                                console.log('Maps synchronized successfully');
+                            } else {
+                                console.warn('Could not find all 3 map objects. Found:', mapObjects.length);
+                            }
+                        } catch (e) {
+                            console.error('Error synchronizing maps:', e);
+                        }
+                    }, 2000);
+                } else {
+                    // Static image mode
+                    const mapContainer = document.getElementById('comparisonImage');
+                    mapContainer.style.display = 'block';
+                    mapContainer.src = 'data:image/png;base64,' + data.image;
+                    
+                    // Hide interactive container if it exists
+                    const interactiveContainer = document.getElementById('interactiveMapsContainer');
+                    if (interactiveContainer) {
+                        interactiveContainer.style.display = 'none';
+                    }
+                }
                 
-                // Update statistics
+                // Update statistics (same for both modes)
                 const stats = data.stats;
                 
                 document.getElementById('race1Name').textContent = stats.race1.name;

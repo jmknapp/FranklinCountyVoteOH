@@ -1,9 +1,7 @@
 """Command-line interface for Franklin Shifts precinct analysis."""
 
 import logging
-import sys
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 import typer
@@ -40,7 +38,7 @@ def init(
     Checks that config file exists, paths are valid, and dependencies are available.
     """
     setup_logging(log_level)
-    logger = logging.getLogger(__name__)
+    logging.getLogger(__name__)
 
     console.print("[bold cyan]Franklin Shifts - Initialization[/bold cyan]\n")
 
@@ -57,7 +55,7 @@ def init(
 
     try:
         cfg = load_config(config_path)
-        console.print(f"[green]✓[/green] Config loaded successfully")
+        console.print("[green]✓[/green] Config loaded successfully")
     except Exception as e:
         console.print(f"[bold red]✗[/bold red] Failed to load config: {e}")
         raise typer.Exit(1)
@@ -69,7 +67,7 @@ def init(
         console.print(f"[bold red]✗[/bold red] Missing config keys: {missing}")
         raise typer.Exit(1)
 
-    console.print(f"[green]✓[/green] Config structure valid")
+    console.print("[green]✓[/green] Config structure valid")
     console.print(f"  Base year: {cfg['base_year']}")
     console.print(f"  CRS: {cfg['crs']}")
     console.print(f"  Years configured: {len(cfg['paths']['shapefiles'])}")
@@ -80,7 +78,7 @@ def init(
         import pandas
         import shapely
 
-        console.print(f"[green]✓[/green] Core dependencies available")
+        console.print("[green]✓[/green] Core dependencies available")
         console.print(f"  GeoPandas: {geopandas.__version__}")
         console.print(f"  Shapely: {shapely.__version__}")
     except ImportError as e:
@@ -100,7 +98,7 @@ def init(
     for d in output_dirs:
         ensure_output_dir(d)
 
-    console.print(f"[green]✓[/green] Output directories created")
+    console.print("[green]✓[/green] Output directories created")
 
     console.print("\n[bold green]✓ Initialization complete![/bold green]")
 
@@ -136,7 +134,7 @@ def crosswalk(
 
         _, crosswalk_df = reallocate_votes_to_base(year, cfg, weight=weight, save_outputs=True)
 
-        console.print(f"\n[bold green]✓ Crosswalk complete![/bold green]")
+        console.print("\n[bold green]✓ Crosswalk complete![/bold green]")
         console.print(f"  Mappings: {len(crosswalk_df)}")
         console.print(f"  Coverage: {crosswalk_df.groupby(year)['frac'].sum().mean():.1%}")
     except Exception as e:
@@ -173,7 +171,7 @@ def harmonize(
 
         gdf, _ = reallocate_votes_to_base(year, cfg, weight=weight, save_outputs=True)
 
-        console.print(f"\n[bold green]✓ Harmonization complete![/bold green]")
+        console.print("\n[bold green]✓ Harmonization complete![/bold green]")
         console.print(f"  Precincts: {len(gdf)}")
         console.print(f"  Total votes: {gdf['total'].sum():,}")
         console.print(f"  D share: {gdf['D_share'].mean():.1%}")
@@ -209,7 +207,7 @@ def harmonize_all(
 
     try:
         harmonize_all_impl(cfg, weight=weight)
-        console.print(f"\n[bold green]✓ All years harmonized successfully![/bold green]")
+        console.print("\n[bold green]✓ All years harmonized successfully![/bold green]")
     except Exception as e:
         console.print(f"\n[bold red]✗ Failed:[/bold red] {e}")
         raise typer.Exit(1)
@@ -235,11 +233,11 @@ def metrics(
 
     cfg = load_config(config_path)
 
-    console.print(f"[bold cyan]Computing metrics and time-series[/bold cyan]\n")
+    console.print("[bold cyan]Computing metrics and time-series[/bold cyan]\n")
 
     try:
         compute_and_save_metrics(cfg)
-        console.print(f"\n[bold green]✓ Metrics computed successfully![/bold green]")
+        console.print("\n[bold green]✓ Metrics computed successfully![/bold green]")
     except Exception as e:
         console.print(f"\n[bold red]✗ Failed:[/bold red] {e}")
         raise typer.Exit(1)
@@ -269,7 +267,7 @@ def maps(
 
     try:
         create_maps_for_metric(cfg, year, metric)
-        console.print(f"\n[bold green]✓ Maps created successfully![/bold green]")
+        console.print("\n[bold green]✓ Maps created successfully![/bold green]")
     except Exception as e:
         console.print(f"\n[bold red]✗ Failed:[/bold red] {e}")
         raise typer.Exit(1)
@@ -294,7 +292,7 @@ def summary(
 
     cfg = load_config(config_path)
 
-    console.print(f"[bold cyan]County-wide Summary[/bold cyan]\n")
+    console.print("[bold cyan]County-wide Summary[/bold cyan]\n")
 
     try:
         df_long = build_timeseries_table(cfg)
@@ -316,7 +314,7 @@ def summary(
                 f"Votes={row['turnout']:,.0f}{swing_str}{turnout_str}"
             )
 
-        console.print(f"\n[bold green]✓ Summary complete![/bold green]")
+        console.print("\n[bold green]✓ Summary complete![/bold green]")
 
     except Exception as e:
         console.print(f"\n[bold red]✗ Failed:[/bold red] {e}")
@@ -338,7 +336,7 @@ def demo(
     setup_logging(log_level)
     logger = logging.getLogger(__name__)
 
-    console.print(f"[bold cyan]Running Demo Pipeline[/bold cyan]\n")
+    console.print("[bold cyan]Running Demo Pipeline[/bold cyan]\n")
 
     try:
         # Generate synthetic data
@@ -366,8 +364,8 @@ def demo(
         create_maps_for_metric(demo_config, "2024", "D_share")
         create_maps_for_metric(demo_config, "2024", "swing_vs_2020")
 
-        console.print(f"\n[bold green]✓ Demo pipeline complete![/bold green]")
-        console.print(f"  Check data/examples/ for outputs")
+        console.print("\n[bold green]✓ Demo pipeline complete![/bold green]")
+        console.print("  Check data/examples/ for outputs")
 
     except Exception as e:
         console.print(f"\n[bold red]✗ Demo failed:[/bold red] {e}")

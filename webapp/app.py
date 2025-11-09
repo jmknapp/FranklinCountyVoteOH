@@ -233,8 +233,8 @@ def load_race_data(race_id):
     
     return gdf, race_info
 
-def create_comparison_map(race1_id, race2_id):
-    """Create a 3-panel comparison map."""
+def create_comparison_map_static(race1_id, race2_id):
+    """Create a 3-panel comparison map as static PNG."""
     # Load data for both races
     gdf1, info1 = load_race_data(race1_id)
     gdf2, info2 = load_race_data(race2_id)
@@ -323,6 +323,233 @@ def create_comparison_map(race1_id, race2_id):
     
     return img_base64, stats
 
+def create_comparison_map_folium(race1_id, race2_id):
+    """Create a 3-panel comparison with interactive Folium maps."""
+    import folium
+    from folium import plugins
+    import branca.colormap as cm
+    
+    # Load data for both races
+    gdf1, info1 = load_race_data(race1_id)
+    gdf2, info2 = load_race_data(race2_id)
+    
+    if gdf1 is None or gdf2 is None:
+        return None, "Failed to load race data"
+    
+    # Convert to WGS84 for Folium
+    gdf1 = gdf1.to_crs('EPSG:4326')
+    gdf2 = gdf2.to_crs('EPSG:4326')
+    
+    # Convert any Timestamp columns to strings
+    for gdf in [gdf1, gdf2]:
+        for col in gdf.columns:
+            if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+                gdf[col] = gdf[col].astype(str)
+    
+    # Compute difference
+    id_col = 'NAME'
+    for col in ['NAME', 'PRECINCT', 'PRECINCT_N', 'PREC_NAME']:
+        if col in gdf1.columns:
+            id_col = col
+            break
+    
+    gdf1['precinct_normalized'] = gdf1[id_col].apply(normalize_precinct_name)
+    gdf2['precinct_normalized'] = gdf2[id_col].apply(normalize_precinct_name)
+    
+    diff_df = gdf1[[id_col, 'precinct_normalized', 'D_share', 'geometry', 'PRECINCT', 'D_votes', 'R_votes', 'total']].merge(
+        gdf2[['precinct_normalized', 'D_share']],
+        on='precinct_normalized',
+        suffixes=('_1', '_2')
+    )
+    diff_df['difference'] = diff_df['D_share_1'] - diff_df['D_share_2']
+    gdf_diff = gpd.GeoDataFrame(diff_df, geometry='geometry', crs=gdf1.crs)
+    
+    # Get center for maps
+    bounds = gdf1.total_bounds
+    center_lat = (bounds[1] + bounds[3]) / 2
+    center_lon = (bounds[0] + bounds[2]) / 2
+    
+    # Create three Folium maps
+    maps_html = []
+    
+    # Map 1: Race 1
+    m1 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+    colormap1 = cm.LinearColormap(
+        colors=['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac'],
+        vmin=0, vmax=1, caption='Democratic/Progressive Share'
+    )
+    folium.GeoJson(
+        gdf1,
+        style_function=lambda feature: {
+            'fillColor': colormap1(feature['properties']['D_share']) if feature['properties']['D_share'] is not None else 'gray',
+            'color': 'black', 'weight': 0.5, 'fillOpacity': 0.7,
+        },
+        tooltip=folium.GeoJsonTooltip(
+            fields=['PRECINCT', 'D_share', 'D_votes', 'R_votes', 'total'],
+            aliases=['Precinct:', 'Dem/Prog Share:', 'Dem/Prog Votes:', 'Rep/Cons Votes:', 'Total:'],
+            localize=True, sticky=False, labels=True,
+            style="background-color: white; border: 2px solid black; border-radius: 3px; box-shadow: 3px;",
+            max_width=300,
+        )
+    ).add_to(m1)
+    colormap1.add_to(m1)
+    plugins.Fullscreen().add_to(m1)
+    title_html1 = f'''<div style="position: fixed; top: 10px; left: 50px; width: 500px; height: 50px; 
+                     background-color: white; border:2px solid grey; z-index:9999; 
+                     font-size:18px; font-weight: bold; padding: 10px">{info1['display_name']}</div>'''
+    m1.get_root().html.add_child(folium.Element(title_html1))
+    
+    # Force map to fill the entire iframe
+    fill_css = '''<style>
+        html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .folium-map, #map, div.folium-map {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+        }
+    </style>'''
+    m1.get_root().html.add_child(folium.Element(fill_css))
+    
+    # Add Home button to reset view
+    home_button = f'''
+    <script>
+        window.addEventListener('load', function() {{
+            var map = null;
+            for (var key in window) {{
+                if (window[key] instanceof L.Map) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+            if (map) {{
+                L.Control.HomeButton = L.Control.extend({{
+                    onAdd: function(map) {{
+                        var button = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                        button.innerHTML = '🏠';
+                        button.style.backgroundColor = 'white';
+                        button.style.width = '34px';
+                        button.style.height = '34px';
+                        button.style.lineHeight = '34px';
+                        button.style.textAlign = 'center';
+                        button.style.cursor = 'pointer';
+                        button.style.fontSize = '18px';
+                        button.title = 'Reset to initial view';
+                        button.onclick = function() {{
+                            map.setView([{center_lat}, {center_lon}], 10);
+                        }};
+                        return button;
+                    }}
+                }});
+                var homeControl = new L.Control.HomeButton({{ position: 'topleft' }});
+                homeControl.addTo(map);
+            }}
+        }});
+    </script>
+    '''
+    m1.get_root().html.add_child(folium.Element(home_button))
+    
+    # Map 2: Race 2  
+    m2 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+    colormap2 = cm.LinearColormap(
+        colors=['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac'],
+        vmin=0, vmax=1, caption='Democratic/Progressive Share'
+    )
+    folium.GeoJson(
+        gdf2,
+        style_function=lambda feature: {
+            'fillColor': colormap2(feature['properties']['D_share']) if feature['properties']['D_share'] is not None else 'gray',
+            'color': 'black', 'weight': 0.5, 'fillOpacity': 0.7,
+        },
+        tooltip=folium.GeoJsonTooltip(
+            fields=['PRECINCT', 'D_share', 'D_votes', 'R_votes', 'total'],
+            aliases=['Precinct:', 'Dem/Prog Share:', 'Dem/Prog Votes:', 'Rep/Cons Votes:', 'Total:'],
+            localize=True, sticky=False, labels=True,
+            style="background-color: white; border: 2px solid black; border-radius: 3px; box-shadow: 3px;",
+            max_width=300,
+        )
+    ).add_to(m2)
+    colormap2.add_to(m2)
+    plugins.Fullscreen().add_to(m2)
+    
+    title_html2 = f'''<div style="position: fixed; top: 10px; left: 50px; width: 500px; height: 50px; 
+                     background-color: white; border:2px solid grey; z-index:9999; 
+                     font-size:18px; font-weight: bold; padding: 10px">{info2['display_name']}</div>'''
+    m2.get_root().html.add_child(folium.Element(title_html2))
+    m2.get_root().html.add_child(folium.Element(fill_css))
+    m2.get_root().html.add_child(folium.Element(home_button))
+    
+    # Map 3: Difference
+    m3 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+    vmax_diff = max(abs(gdf_diff['difference'].min()), abs(gdf_diff['difference'].max()))
+    colormap3 = cm.LinearColormap(
+        colors=['#762a83', '#af8dc3', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#7fbf7b', '#1b7837'],
+        vmin=-vmax_diff, vmax=vmax_diff, caption='Difference'
+    )
+    folium.GeoJson(
+        gdf_diff,
+        style_function=lambda feature: {
+            'fillColor': colormap3(feature['properties']['difference']) if feature['properties']['difference'] is not None else 'gray',
+            'color': 'black', 'weight': 0.5, 'fillOpacity': 0.7,
+        },
+        tooltip=folium.GeoJsonTooltip(
+            fields=['PRECINCT', 'difference', 'D_share_1', 'D_share_2'],
+            aliases=['Precinct:', 'Difference:', 'Race 1 Share:', 'Race 2 Share:'],
+            localize=True, sticky=False, labels=True,
+            style="background-color: white; border: 2px solid black; border-radius: 3px; box-shadow: 3px;",
+            max_width=300,
+        )
+    ).add_to(m3)
+    colormap3.add_to(m3)
+    plugins.Fullscreen().add_to(m3)
+    
+    title_html3 = f'''<div style="position: fixed; top: 10px; left: 50px; width: 600px; height: 50px; 
+                     background-color: white; border:2px solid grey; z-index:9999; 
+                     font-size:16px; font-weight: bold; padding: 10px">
+                     Difference (Green = {info1['display_name']} higher, Purple = {info2['display_name']} higher)</div>'''
+    m3.get_root().html.add_child(folium.Element(title_html3))
+    m3.get_root().html.add_child(folium.Element(fill_css))
+    m3.get_root().html.add_child(folium.Element(home_button))
+    
+    # Get the HTML for each map and wrap with unique IDs
+    map1_html = m1._repr_html_().replace('<div', '<div id="map1"', 1)
+    map2_html = m2._repr_html_().replace('<div', '<div id="map2"', 1)
+    map3_html = m3._repr_html_().replace('<div', '<div id="map3"', 1)
+    
+    maps_html = [map1_html, map2_html, map3_html]
+    
+    # Calculate statistics (same as static version)
+    stats = {
+        'race1': {
+            'name': info1['display_name'],
+            'pct': float(gdf1['D_share'].mean() * 100),
+            'total_d': int(gdf1['D_votes'].sum()),
+            'total_r': int(gdf1['R_votes'].sum())
+        },
+        'race2': {
+            'name': info2['display_name'],
+            'pct': float(gdf2['D_share'].mean() * 100),
+            'total_d': int(gdf2['D_votes'].sum()),
+            'total_r': int(gdf2['R_votes'].sum())
+        },
+        'difference': {
+            'mean': float(diff_df['difference'].mean() * 100),
+            'std': float(diff_df['difference'].std() * 100),
+            'min': float(diff_df['difference'].min() * 100),
+            'max': float(diff_df['difference'].max() * 100)
+        }
+    }
+    
+    return maps_html, stats
+
 @app.route('/')
 def index():
     """Main page with race selection dropdowns."""
@@ -405,6 +632,7 @@ def api_compare():
     data = request.get_json()
     race1_id = data.get('race1')
     race2_id = data.get('race2')
+    mode = data.get('mode', 'static')  # Default to static for backward compatibility
     
     if not race1_id or not race2_id:
         return jsonify({'error': 'Both races must be selected'}), 400
@@ -413,15 +641,28 @@ def api_compare():
         return jsonify({'error': 'Please select two different races'}), 400
     
     try:
-        img_base64, stats = create_comparison_map(race1_id, race2_id)
-        
-        if img_base64 is None:
-            return jsonify({'error': stats}), 500
-        
-        return jsonify({
-            'image': img_base64,
-            'stats': stats
-        })
+        if mode == 'interactive':
+            maps_html, stats = create_comparison_map_folium(race1_id, race2_id)
+            
+            if maps_html is None:
+                return jsonify({'error': stats}), 500
+            
+            return jsonify({
+                'mode': 'interactive',
+                'maps': maps_html,
+                'stats': stats
+            })
+        else:
+            img_base64, stats = create_comparison_map_static(race1_id, race2_id)
+            
+            if img_base64 is None:
+                return jsonify({'error': stats}), 500
+            
+            return jsonify({
+                'mode': 'static',
+                'image': img_base64,
+                'stats': stats
+            })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

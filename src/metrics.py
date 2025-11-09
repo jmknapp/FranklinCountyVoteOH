@@ -128,7 +128,7 @@ def build_timeseries_table(cfg: dict[str, Any]) -> pd.DataFrame:
         )
 
     base_year = str(cfg["base_year"])
-    base_id = cfg["id_fields"][base_year]
+    cfg["id_fields"][base_year]
     all_years = sorted(cfg["paths"]["shapefiles"].keys())
 
     # Load all layers

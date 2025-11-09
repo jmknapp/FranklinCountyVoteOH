@@ -2,12 +2,11 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib.colors import Colormap
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +18,9 @@ def export_static_choropleth(
     out_path: str | Path,
     cmap: str = "RdBu",
     figsize: tuple[int, int] = (12, 10),
-    vmin: Optional[float] = None,
-    vmax: Optional[float] = None,
-    legend_label: Optional[str] = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
+    legend_label: str | None = None,
 ) -> None:
     """
     Export a static choropleth map as PNG.
@@ -108,7 +107,7 @@ def export_folium_map(
     title: str,
     out_path: str | Path,
     cmap: str = "RdBu",
-    tooltip_cols: Optional[list[str]] = None,
+    tooltip_cols: list[str] | None = None,
 ) -> None:
     """
     Export an interactive Folium map as HTML.
@@ -184,18 +183,20 @@ def export_folium_map(
         tooltip_cols = [col for col in plot_gdf.columns if col != "geometry"][:5]
 
     # Create tooltip layer
-    style_function = lambda x: {
-        "fillColor": "#ffffff",
-        "color": "#000000",
-        "fillOpacity": 0.1,
-        "weight": 0.1,
-    }
-    highlight_function = lambda x: {
-        "fillColor": "#000000",
-        "color": "#000000",
-        "fillOpacity": 0.3,
-        "weight": 1.5,
-    }
+    def style_function(x):
+        return {
+            "fillColor": "#ffffff",
+            "color": "#000000",
+            "fillOpacity": 0.1,
+            "weight": 0.1,
+        }
+    def highlight_function(x):
+        return {
+            "fillColor": "#000000",
+            "color": "#000000",
+            "fillOpacity": 0.3,
+            "weight": 1.5,
+        }
 
     tooltip = folium.GeoJsonTooltip(
         fields=tooltip_cols,
@@ -220,9 +221,9 @@ def export_folium_map(
 
     # Add title
     title_html = f'''
-    <div style="position: fixed; 
-                top: 10px; left: 50px; width: 400px; height: 50px; 
-                background-color: white; border:2px solid grey; z-index:9999; 
+    <div style="position: fixed;
+                top: 10px; left: 50px; width: 400px; height: 50px;
+                background-color: white; border:2px solid grey; z-index:9999;
                 font-size:16px; font-weight: bold; padding: 10px">
         {title}
     </div>

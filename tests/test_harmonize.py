@@ -178,7 +178,7 @@ def test_crosswalk_saved(simple_test_data):
     past_col = [col for col in crosswalk.columns if col.startswith("PREC_ID")][0]
     frac_sums = crosswalk.groupby(past_col)["frac"].sum()
 
-    for prec_id, frac_sum in frac_sums.items():
+    for _prec_id, frac_sum in frac_sums.items():
         assert frac_sum == pytest.approx(1.0, rel=1e-2)
 
 

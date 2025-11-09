@@ -1,12 +1,9 @@
 """Build spatial crosswalks between different precinct vintages."""
 
 import logging
-from typing import Optional
 
 import geopandas as gpd
 import pandas as pd
-from shapely.geometry import Polygon
-from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +14,8 @@ def build_crosswalk(
     past_id: str,
     base_id: str,
     weight: str = "area",
-    blocks_gdf: Optional[gpd.GeoDataFrame] = None,
-    block_pop_field: Optional[str] = None,
+    blocks_gdf: gpd.GeoDataFrame | None = None,
+    block_pop_field: str | None = None,
     sliver_tolerance: float = 1e-9,
 ) -> pd.DataFrame:
     """

@@ -1,7 +1,6 @@
 """Tests for spatial crosswalk building."""
 
 import geopandas as gpd
-import pandas as pd
 import pytest
 from shapely.geometry import Polygon
 

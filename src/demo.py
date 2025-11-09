@@ -39,7 +39,7 @@ def generate_synthetic_example() -> dict[str, Any]:
     config = {
         "base_year": "2024",
         "crs": crs,
-        "id_fields": {year: "PREC_ID" for year in years},
+        "id_fields": dict.fromkeys(years, "PREC_ID"),
         "paths": {"shapefiles": {}, "results_csv": {}},
         "output": {
             "harmonized_gpkg": str(base_dir / "harmonized.gpkg"),
@@ -149,9 +149,9 @@ def generate_synthetic_example() -> dict[str, Any]:
         yaml.dump(config, f, default_flow_style=False)
 
     logger.info(f"Synthetic example data generated in {base_dir}")
-    logger.info(f"  2024 (base): 4 precincts (2x2 grid)")
-    logger.info(f"  2022: 3 precincts (different boundaries)")
-    logger.info(f"  2020: 2 precincts (horizontal split)")
+    logger.info("  2024 (base): 4 precincts (2x2 grid)")
+    logger.info("  2022: 3 precincts (different boundaries)")
+    logger.info("  2020: 2 precincts (horizontal split)")
 
     return config
 
