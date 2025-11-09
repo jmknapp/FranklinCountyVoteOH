@@ -394,10 +394,50 @@ def create_comparison_map_folium(race1_id, race2_id):
     ).add_to(m1)
     colormap1.add_to(m1)
     plugins.Fullscreen().add_to(m1)
-    title_html1 = f'''<div style="position: fixed; top: 10px; left: 50px; width: 500px; height: 50px; 
-                     background-color: white; border:2px solid grey; z-index:9999; 
-                     font-size:18px; font-weight: bold; padding: 10px">{info1['display_name']}</div>'''
-    m1.get_root().html.add_child(folium.Element(title_html1))
+    
+    # Add title as a Leaflet control (stays with map in fullscreen)
+    title_control1 = f'''
+    <script>
+        window.addEventListener('load', function() {{
+            var map = null;
+            for (var key in window) {{
+                if (window[key] instanceof L.Map) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+            if (map) {{
+                var titleDiv = null;
+                L.Control.Title = L.Control.extend({{
+                    onAdd: function(map) {{
+                        titleDiv = L.DomUtil.create('div', 'leaflet-control-title');
+                        titleDiv.innerHTML = '{info1['display_name']}';
+                        titleDiv.style.backgroundColor = 'white';
+                        titleDiv.style.border = '2px solid grey';
+                        titleDiv.style.borderRadius = '4px';
+                        titleDiv.style.padding = '10px';
+                        titleDiv.style.fontSize = '18px';
+                        titleDiv.style.fontWeight = 'bold';
+                        titleDiv.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                        titleDiv.style.maxWidth = '500px';
+                        titleDiv.style.display = 'none';  // Hidden by default
+                        return titleDiv;
+                    }}
+                }});
+                var titleControl = new L.Control.Title({{ position: 'topleft' }});
+                titleControl.addTo(map);
+                
+                // Show/hide title based on fullscreen state
+                map.on('fullscreenchange', function() {{
+                    if (titleDiv) {{
+                        titleDiv.style.display = map.isFullscreen() ? 'block' : 'none';
+                    }}
+                }});
+            }}
+        }});
+    </script>
+    '''
+    m1.get_root().html.add_child(folium.Element(title_control1))
     
     # Force map to fill the entire iframe
     fill_css = '''<style>
@@ -415,6 +455,14 @@ def create_comparison_map_folium(race1_id, race2_id):
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
+        }
+        /* Move color legend to bottom center */
+        .leaflet-top.leaflet-right {
+            top: auto !important;
+            bottom: 10px !important;
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
         }
     </style>'''
     m1.get_root().html.add_child(folium.Element(fill_css))
@@ -480,10 +528,54 @@ def create_comparison_map_folium(race1_id, race2_id):
     colormap2.add_to(m2)
     plugins.Fullscreen().add_to(m2)
     
-    title_html2 = f'''<div style="position: fixed; top: 10px; left: 50px; width: 500px; height: 50px; 
-                     background-color: white; border:2px solid grey; z-index:9999; 
-                     font-size:18px; font-weight: bold; padding: 10px">{info2['display_name']}</div>'''
-    m2.get_root().html.add_child(folium.Element(title_html2))
+    # Add title as a Leaflet control (stays with map in fullscreen)
+    title_control2 = f'''
+    <script>
+        window.addEventListener('load', function() {{
+            var map = null;
+            for (var key in window) {{
+                if (window[key] instanceof L.Map) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+            if (map) {{
+                L.Control.Title = L.Control.extend({{
+                    onAdd: function(map) {{
+                        var div = L.DomUtil.create('div', 'leaflet-control-title');
+                        div.innerHTML = '{info2['display_name']}';
+                        div.style.backgroundColor = 'white';
+                        div.style.border = '2px solid grey';
+                        div.style.borderRadius = '4px';
+                        div.style.padding = '10px';
+                        div.style.fontSize = '18px';
+                        div.style.fontWeight = 'bold';
+                        div.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                        div.style.maxWidth = '500px';
+                        div.style.display = 'none';  // Hidden by default
+                        return div;
+                    }}
+                }});
+                var titleControl = new L.Control.Title({{ position: 'topleft' }});
+                titleControl.addTo(map);
+                
+                // Show/hide title based on fullscreen state
+                map.on('fullscreenchange', function() {{
+                    var titleEl = document.querySelector('.leaflet-control-title');
+                    if (titleEl) {{
+                        if (map.isFullscreen()) {{
+                            titleEl.style.display = 'block';
+                        }} else {{
+                            titleEl.style.display = 'none';
+                        }}
+                    }}
+                }});
+            }}
+        }});
+    </script>
+    '''
+    m2.get_root().html.add_child(folium.Element(title_control2))
+    
     m2.get_root().html.add_child(folium.Element(fill_css))
     m2.get_root().html.add_child(folium.Element(home_button))
     
@@ -511,11 +603,55 @@ def create_comparison_map_folium(race1_id, race2_id):
     colormap3.add_to(m3)
     plugins.Fullscreen().add_to(m3)
     
-    title_html3 = f'''<div style="position: fixed; top: 10px; left: 50px; width: 600px; height: 50px; 
-                     background-color: white; border:2px solid grey; z-index:9999; 
-                     font-size:16px; font-weight: bold; padding: 10px">
-                     Difference (Green = {info1['display_name']} higher, Purple = {info2['display_name']} higher)</div>'''
-    m3.get_root().html.add_child(folium.Element(title_html3))
+    # Add title as a Leaflet control (stays with map in fullscreen)
+    title_text3 = f"Difference (Green = {info1['display_name']} higher, Purple = {info2['display_name']} higher)"
+    title_control3 = f'''
+    <script>
+        window.addEventListener('load', function() {{
+            var map = null;
+            for (var key in window) {{
+                if (window[key] instanceof L.Map) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+            if (map) {{
+                L.Control.Title = L.Control.extend({{
+                    onAdd: function(map) {{
+                        var div = L.DomUtil.create('div', 'leaflet-control-title');
+                        div.innerHTML = '{title_text3}';
+                        div.style.backgroundColor = 'white';
+                        div.style.border = '2px solid grey';
+                        div.style.borderRadius = '4px';
+                        div.style.padding = '10px';
+                        div.style.fontSize = '16px';
+                        div.style.fontWeight = 'bold';
+                        div.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                        div.style.maxWidth = '600px';
+                        div.style.display = 'none';  // Hidden by default
+                        return div;
+                    }}
+                }});
+                var titleControl = new L.Control.Title({{ position: 'topleft' }});
+                titleControl.addTo(map);
+                
+                // Show/hide title based on fullscreen state
+                map.on('fullscreenchange', function() {{
+                    var titleEl = document.querySelector('.leaflet-control-title');
+                    if (titleEl) {{
+                        if (map.isFullscreen()) {{
+                            titleEl.style.display = 'block';
+                        }} else {{
+                            titleEl.style.display = 'none';
+                        }}
+                    }}
+                }});
+            }}
+        }});
+    </script>
+    '''
+    m3.get_root().html.add_child(folium.Element(title_control3))
+    
     m3.get_root().html.add_child(folium.Element(fill_css))
     m3.get_root().html.add_child(folium.Element(home_button))
     

@@ -421,15 +421,45 @@
                     // Clear previous maps and insert new ones
                     interactiveContainer.innerHTML = '';
                     data.maps.forEach((mapHtml, idx) => {
+                        // Create wrapper for title + map
+                        const wrapper = document.createElement('div');
+                        wrapper.style.display = 'flex';
+                        wrapper.style.flexDirection = 'column';
+                        
+                        // Create title div above map
+                        const titleDiv = document.createElement('div');
+                        titleDiv.style.padding = '10px';
+                        titleDiv.style.backgroundColor = '#f8f9fa';
+                        titleDiv.style.border = '1px solid #ddd';
+                        titleDiv.style.borderBottom = 'none';
+                        titleDiv.style.borderRadius = '8px 8px 0 0';
+                        titleDiv.style.fontWeight = 'bold';
+                        titleDiv.style.fontSize = '16px';
+                        titleDiv.style.textAlign = 'center';
+                        
+                        // Set title text based on which map
+                        if (idx === 0) {
+                            titleDiv.textContent = data.stats.race1.name;
+                        } else if (idx === 1) {
+                            titleDiv.textContent = data.stats.race2.name;
+                        } else {
+                            titleDiv.textContent = 'Difference';
+                        }
+                        
+                        // Create map container
                         const mapDiv = document.createElement('div');
                         mapDiv.style.width = '100%';
                         mapDiv.style.height = '700px';
                         mapDiv.style.border = '1px solid #ddd';
-                        mapDiv.style.borderRadius = '8px';
+                        mapDiv.style.borderRadius = '0 0 8px 8px';
                         mapDiv.style.overflow = 'hidden';
                         mapDiv.style.position = 'relative';
                         mapDiv.innerHTML = mapHtml;
-                        interactiveContainer.appendChild(mapDiv);
+                        
+                        // Add title and map to wrapper
+                        wrapper.appendChild(titleDiv);
+                        wrapper.appendChild(mapDiv);
+                        interactiveContainer.appendChild(wrapper);
                         
                         // Force iframe to fill container completely
                         setTimeout(() => {
