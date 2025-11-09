@@ -2,7 +2,9 @@
 
 ## Overview
 
-The 2025 Columbus City Council District 7 race between **Jesse Vogel** (progressive challenger) and **Tiara Ross** (establishment Democrat) revealed a stark divide between the progressive Left and the traditional Democratic base. Ross, endorsed by the Franklin County Democratic Party, dominated among Black voters and working-class neighborhoods, while Vogel's progressive challenge found support primarily in white, college-educated, gentrifying areas.
+The 2025 Columbus City Council District 7 race between **Jesse Vogel** (progressive challenger, resident of District 7) and **Tiara Ross** (establishment Democrat, resident of District 7) was an **at-large citywide election** where all Columbus voters could participate, regardless of district. The results revealed a stark divide between the progressive Left and the traditional Democratic base: Ross, endorsed by the Franklin County Democratic Party, dominated among Black voters and working-class neighborhoods citywide, while Vogel's progressive challenge found support primarily in white, college-educated, gentrifying areas.
+
+**Note on Columbus City Council Elections**: While candidates must reside in their district, the elections are at-large citywide races, meaning all Columbus voters participate in choosing each council member.
 
 ## Race Results
 
@@ -13,25 +15,26 @@ The 2025 Columbus City Council District 7 race between **Jesse Vogel** (progress
 
 A close race that exposed deep fissures within Columbus Democrats. Ross's victory was built on the traditional Democratic base - Black voters and working-class neighborhoods - while Vogel's progressive challenge found its support among white, college-educated newcomers.
 
-## District 7 Demographics
+## Citywide Voting Base
 
-**Population**: 111,689 (Columbus precincts only in analysis)
+Since this was an **at-large citywide election**, all Columbus voters participated:
 
-**Racial Composition**:
-- White (Non-Hispanic): 63.1%
-- Black: 24.4%
-- Hispanic: 4.9%
+**Analysis Coverage**: 548 Columbus precincts with complete demographic and voting data
 
-**Socioeconomic Profile**:
-- Median Age: 33.8 years
-- College Degree: 43.6%
-- Characterized by mixed neighborhoods with significant diversity
+**Vote Distribution by Precinct Type**:
+- **Majority-Black precincts** (>50% Black): 125 precincts, 19,436 votes cast
+  - Average Vogel support: **25.4%**
+- **Other precincts** (≤50% Black): 423 precincts, 85,525 votes cast
+  - Average Vogel support: **51.4%**
+- **Difference**: 25.9 percentage point gap in Vogel support
 
-## Geographic Voting Patterns
+The vast majority of votes (81.5%) came from non-majority-Black precincts, where Vogel performed much better but still lost overall.
 
-### Majority-Black Precincts (21 precincts, >50% Black)
+## Geographic Voting Patterns (Citywide)
 
-**Average Vogel Support: 36.2%**
+### Majority-Black Precincts (125 precincts citywide, >50% Black)
+
+**Average Vogel Support: 25.4%** (citywide average across all majority-Black precincts)
 
 These precincts strongly favored Ross, with some precincts showing overwhelming support:
 
@@ -47,11 +50,11 @@ These precincts strongly favored Ross, with some precincts showing overwhelming 
 
 The exceptions were precincts with higher educational attainment, suggesting education played a moderating role.
 
-### White/Mixed Precincts
+### Non-Majority-Black Precincts (423 precincts citywide, ≤50% Black)
 
-**District 7 Overall: 57.2% Vogel** (all precincts with data)
+**Average Vogel Support: 51.4%** (citywide average)
 
-Vogel performed significantly better in whiter, more educated precincts, building a coalition typical of progressive challenges to Democratic establishments: well-educated newcomers in gentrifying neighborhoods rather than the party's traditional working-class base.
+Vogel performed significantly better in whiter, more educated precincts, building a coalition typical of progressive challenges to Democratic establishments: well-educated newcomers in gentrifying neighborhoods rather than the party's traditional working-class base. However, even winning these precincts 51.4% to 48.6% wasn't enough to overcome Ross's overwhelming margins in majority-Black precincts.
 
 ## Statistical Analysis
 
@@ -160,15 +163,15 @@ The CD7 race reveals deep tensions in Columbus's rapidly changing neighborhoods:
 
 4. **Progressive Challenges Face Legitimacy Questions**: When your coalition is whiter and more educated than your opponent's, claims to represent marginalized communities ring hollow.
 
-## Demographic Breakdown: District 7 Majority-Black Precincts
+## Demographic Breakdown: Citywide Majority-Black Precincts
 
-**21 Precincts (>50% Black)**
+**125 Precincts (>50% Black) across Columbus**
 
 | Category | Range | Notes |
 |----------|-------|-------|
 | % Black | 50.5% - 91.9% | Wide variation |
 | % College | 2.4% - 31.6% | Most under 15% |
-| Vogel Support | 14.7% - 56.0% | Average: 36.2% |
+| Vogel Support | 0% - 56.0% | Citywide average: 25.4% |
 
 **Highest % Black Precincts** (all strongly supported Ross):
 - COLUMBUS 07-C: 91.9% Black → 31.3% Vogel
@@ -184,7 +187,7 @@ The Columbus City Council District 7 race demonstrates that progressive challeng
 
 **Key Takeaways**:
 
-1. **The Democratic Base Chose the Machine**: Black voters in District 7 backed the Franklin County Democratic Party's endorsed candidate by a 64-36 margin in majority-Black precincts, rejecting the progressive challenger despite his ostensibly more "progressive" platform.
+1. **The Democratic Base Chose the Machine**: Black voters citywide backed the Franklin County Democratic Party's endorsed candidate by a 75-25 margin in majority-Black precincts, decisively rejecting the progressive challenger despite his ostensibly more "progressive" platform.
 
 2. **Gentrification Created an Inverted Coalition**: The progressive challenger's support came from white, college-educated newcomers - exactly the demographic associated with displacement - while the "establishment machine" candidate represented community continuity for longtime Black residents.
 
