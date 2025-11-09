@@ -765,6 +765,8 @@ def create_comparison_map_folium(race1_id, race2_id):
 def index():
     """Main page with race selection dropdowns."""
     races = get_available_races()
+    # Exclude city council races from comparison page
+    races = [r for r in races if r.get('race_type') != 'City Council']
     return render_template('index.html', races=races)
 
 
