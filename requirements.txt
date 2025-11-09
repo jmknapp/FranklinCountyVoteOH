@@ -13,7 +13,8 @@ pyyaml>=6.0
 typer>=0.9.0
 python-dotenv>=1.0.0
 rich>=13.0.0
-openpyxl>=3.1.0  # Excel file support for preprocessing
+openpyxl>=3.1.0  # Excel file support for preprocessing (.xlsx)
+xlrd>=2.0.1  # Excel file support for older .xls files
 flask>=3.0.0  # Web app for interactive comparisons
 
 # Development dependencies

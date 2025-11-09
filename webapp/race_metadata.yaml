@@ -2,6 +2,14 @@
 # Defines display names, types, and vote orientation for each race file
 
 races:
+  # 2008 Elections
+  results_2008:
+    display_name: "2008 President"
+    race_type: "Presidential"
+    year: 2008
+    candidates: "Obama (D) vs McCain (R)"
+    blue_side: "D"  # D_votes = Obama (Democratic)
+    
   # 2025 Elections
   results_2025_columbus_cd7:
     display_name: "2025 Columbus City Council District 7"
