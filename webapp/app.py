@@ -853,6 +853,37 @@ def api_compare():
         return jsonify({'error': str(e)}), 500
 
 
+def extract_progressive_candidate_name(candidates_str):
+    """
+    Extract the progressive/Democratic candidate's last name from candidates string.
+    
+    Examples:
+        "Vogel (Progressive) vs Ross (Conservative)" -> "Vogel"
+        "Harris (D) vs Trump (R)" -> "Harris"
+        "Brown (D) vs Moreno (R)" -> "Brown"
+    """
+    if not candidates_str:
+        return None
+    
+    # Split on 'vs' and take the first candidate
+    parts = candidates_str.split(' vs ')
+    if not parts:
+        return None
+    
+    # Get first candidate (before "vs")
+    first_candidate = parts[0].strip()
+    
+    # Extract name before parentheses (e.g., "Vogel (Progressive)" -> "Vogel")
+    name = first_candidate.split('(')[0].strip()
+    
+    # If there are multiple words, take the last one as the last name
+    name_parts = name.split()
+    if name_parts:
+        return name_parts[-1]
+    
+    return None
+
+
 @app.route('/api/onemap', methods=['POST'])
 def api_onemap():
     """API endpoint to generate single map with color scheme selection."""
@@ -886,15 +917,18 @@ def api_onemap():
         # Create Folium map
         m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
         
+        # Extract progressive candidate's last name for caption
+        candidate_name = extract_progressive_candidate_name(info.get('candidates', ''))
+        
         # Choose colors based on colormap selection
         if colormap == 'PuOr':
             # Purple (high) to Orange (low) - good for difference maps, no green conflict
             colors = ['#e66101', '#fdb863', '#fee0b6', '#f7f7f7', '#d8daeb', '#b2abd2', '#5e3c99']
-            caption = 'Democratic/Progressive Share'
+            caption = f'{candidate_name} Share' if candidate_name else 'Democratic/Progressive Share'
         elif colormap == 'PiYG':
             # Pink to Yellow-Green - another alternative
             colors = ['#c51b7d', '#e9a3c9', '#fde0ef', '#f7f7f7', '#e6f5d0', '#a1d76a', '#4d9221']
-            caption = 'Democratic/Progressive Share'
+            caption = f'{candidate_name} Share' if candidate_name else 'Democratic/Progressive Share'
         else:  # Default RdBu
             colors = ['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac']
             caption = 'Democratic/Progressive Share'
