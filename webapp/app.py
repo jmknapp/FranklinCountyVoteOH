@@ -410,7 +410,7 @@ def create_comparison_map_folium(race1_id, race2_id):
                 var titleDiv = null;
                 L.Control.Title = L.Control.extend({{
                     onAdd: function(map) {{
-                        titleDiv = L.DomUtil.create('div', 'leaflet-control-title');
+                        titleDiv = L.DomUtil.create('div', 'leaflet-control-title-dynamic');
                         titleDiv.innerHTML = '{info1['display_name']}';
                         titleDiv.style.backgroundColor = 'white';
                         titleDiv.style.border = '2px solid grey';
@@ -427,12 +427,28 @@ def create_comparison_map_folium(race1_id, race2_id):
                 var titleControl = new L.Control.Title({{ position: 'topleft' }});
                 titleControl.addTo(map);
                 
-                // Show/hide title based on fullscreen state
-                map.on('fullscreenchange', function() {{
+                // Listen for fullscreen changes on the document
+                function updateTitleVisibility() {{
                     if (titleDiv) {{
-                        titleDiv.style.display = map.isFullscreen() ? 'block' : 'none';
+                        // Check if we're in fullscreen mode
+                        var isFullscreen = document.fullscreenElement || 
+                                         document.webkitFullscreenElement || 
+                                         document.mozFullScreenElement ||
+                                         document.msFullscreenElement;
+                        titleDiv.style.display = isFullscreen ? 'block' : 'none';
                     }}
-                }});
+                }}
+                
+                // Listen to multiple fullscreen events
+                document.addEventListener('fullscreenchange', updateTitleVisibility);
+                document.addEventListener('webkitfullscreenchange', updateTitleVisibility);
+                document.addEventListener('mozfullscreenchange', updateTitleVisibility);
+                document.addEventListener('MSFullscreenChange', updateTitleVisibility);
+                
+                // Also listen to Leaflet's own event if available
+                if (map.on) {{
+                    map.on('fullscreenchange', updateTitleVisibility);
+                }}
             }}
         }});
     </script>
@@ -540,36 +556,48 @@ def create_comparison_map_folium(race1_id, race2_id):
                 }}
             }}
             if (map) {{
+                var titleDiv = null;
                 L.Control.Title = L.Control.extend({{
                     onAdd: function(map) {{
-                        var div = L.DomUtil.create('div', 'leaflet-control-title');
-                        div.innerHTML = '{info2['display_name']}';
-                        div.style.backgroundColor = 'white';
-                        div.style.border = '2px solid grey';
-                        div.style.borderRadius = '4px';
-                        div.style.padding = '10px';
-                        div.style.fontSize = '18px';
-                        div.style.fontWeight = 'bold';
-                        div.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
-                        div.style.maxWidth = '500px';
-                        div.style.display = 'none';  // Hidden by default
-                        return div;
+                        titleDiv = L.DomUtil.create('div', 'leaflet-control-title-dynamic');
+                        titleDiv.innerHTML = '{info2['display_name']}';
+                        titleDiv.style.backgroundColor = 'white';
+                        titleDiv.style.border = '2px solid grey';
+                        titleDiv.style.borderRadius = '4px';
+                        titleDiv.style.padding = '10px';
+                        titleDiv.style.fontSize = '18px';
+                        titleDiv.style.fontWeight = 'bold';
+                        titleDiv.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                        titleDiv.style.maxWidth = '500px';
+                        titleDiv.style.display = 'none';  // Hidden by default
+                        return titleDiv;
                     }}
                 }});
                 var titleControl = new L.Control.Title({{ position: 'topleft' }});
                 titleControl.addTo(map);
                 
-                // Show/hide title based on fullscreen state
-                map.on('fullscreenchange', function() {{
-                    var titleEl = document.querySelector('.leaflet-control-title');
-                    if (titleEl) {{
-                        if (map.isFullscreen()) {{
-                            titleEl.style.display = 'block';
-                        }} else {{
-                            titleEl.style.display = 'none';
-                        }}
+                // Listen for fullscreen changes on the document
+                function updateTitleVisibility() {{
+                    if (titleDiv) {{
+                        // Check if we're in fullscreen mode
+                        var isFullscreen = document.fullscreenElement || 
+                                         document.webkitFullscreenElement || 
+                                         document.mozFullScreenElement ||
+                                         document.msFullscreenElement;
+                        titleDiv.style.display = isFullscreen ? 'block' : 'none';
                     }}
-                }});
+                }}
+                
+                // Listen to multiple fullscreen events
+                document.addEventListener('fullscreenchange', updateTitleVisibility);
+                document.addEventListener('webkitfullscreenchange', updateTitleVisibility);
+                document.addEventListener('mozfullscreenchange', updateTitleVisibility);
+                document.addEventListener('MSFullscreenChange', updateTitleVisibility);
+                
+                // Also listen to Leaflet's own event if available
+                if (map.on) {{
+                    map.on('fullscreenchange', updateTitleVisibility);
+                }}
             }}
         }});
     </script>
@@ -616,36 +644,48 @@ def create_comparison_map_folium(race1_id, race2_id):
                 }}
             }}
             if (map) {{
+                var titleDiv = null;
                 L.Control.Title = L.Control.extend({{
                     onAdd: function(map) {{
-                        var div = L.DomUtil.create('div', 'leaflet-control-title');
-                        div.innerHTML = '{title_text3}';
-                        div.style.backgroundColor = 'white';
-                        div.style.border = '2px solid grey';
-                        div.style.borderRadius = '4px';
-                        div.style.padding = '10px';
-                        div.style.fontSize = '16px';
-                        div.style.fontWeight = 'bold';
-                        div.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
-                        div.style.maxWidth = '600px';
-                        div.style.display = 'none';  // Hidden by default
-                        return div;
+                        titleDiv = L.DomUtil.create('div', 'leaflet-control-title-dynamic');
+                        titleDiv.innerHTML = '{title_text3}';
+                        titleDiv.style.backgroundColor = 'white';
+                        titleDiv.style.border = '2px solid grey';
+                        titleDiv.style.borderRadius = '4px';
+                        titleDiv.style.padding = '10px';
+                        titleDiv.style.fontSize = '16px';
+                        titleDiv.style.fontWeight = 'bold';
+                        titleDiv.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                        titleDiv.style.maxWidth = '600px';
+                        titleDiv.style.display = 'none';  // Hidden by default
+                        return titleDiv;
                     }}
                 }});
                 var titleControl = new L.Control.Title({{ position: 'topleft' }});
                 titleControl.addTo(map);
                 
-                // Show/hide title based on fullscreen state
-                map.on('fullscreenchange', function() {{
-                    var titleEl = document.querySelector('.leaflet-control-title');
-                    if (titleEl) {{
-                        if (map.isFullscreen()) {{
-                            titleEl.style.display = 'block';
-                        }} else {{
-                            titleEl.style.display = 'none';
-                        }}
+                // Listen for fullscreen changes on the document
+                function updateTitleVisibility() {{
+                    if (titleDiv) {{
+                        // Check if we're in fullscreen mode
+                        var isFullscreen = document.fullscreenElement || 
+                                         document.webkitFullscreenElement || 
+                                         document.mozFullScreenElement ||
+                                         document.msFullscreenElement;
+                        titleDiv.style.display = isFullscreen ? 'block' : 'none';
                     }}
-                }});
+                }}
+                
+                // Listen to multiple fullscreen events
+                document.addEventListener('fullscreenchange', updateTitleVisibility);
+                document.addEventListener('webkitfullscreenchange', updateTitleVisibility);
+                document.addEventListener('mozfullscreenchange', updateTitleVisibility);
+                document.addEventListener('MSFullscreenChange', updateTitleVisibility);
+                
+                // Also listen to Leaflet's own event if available
+                if (map.on) {{
+                    map.on('fullscreenchange', updateTitleVisibility);
+                }}
             }}
         }});
     </script>
