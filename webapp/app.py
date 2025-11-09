@@ -181,14 +181,21 @@ def get_shapefile_for_year(year):
     # Load shapefile - try/except in case file is corrupted
     try:
         shp = gpd.read_file(shp_file)
-        shp = shp.to_crs('EPSG:3747')
+        # If no CRS defined, assume Ohio State Plane South (common for Franklin County)
+        if shp.crs is None:
+            shp = shp.set_crs('EPSG:3747')
+        elif shp.crs != 'EPSG:3747':
+            shp = shp.to_crs('EPSG:3747')
     except Exception as e:
         # Try other .shp files in the directory
         for alt_shp in closest_dir.glob('*.shp'):
             if alt_shp != shp_file:
                 try:
                     shp = gpd.read_file(alt_shp)
-                    shp = shp.to_crs('EPSG:3747')
+                    if shp.crs is None:
+                        shp = shp.set_crs('EPSG:3747')
+                    elif shp.crs != 'EPSG:3747':
+                        shp = shp.to_crs('EPSG:3747')
                     break
                 except:
                     continue
