@@ -732,6 +732,13 @@ def index():
     races = get_available_races()
     return render_template('index.html', races=races)
 
+
+@app.route('/onemap')
+def onemap():
+    """Single map viewer with color scheme selector."""
+    races = get_available_races()
+    return render_template('onemap.html', races=races)
+
 @app.route('/test')
 def test_interactive():
     """Link to test interactive maps."""
@@ -839,6 +846,210 @@ def api_compare():
                 'image': img_base64,
                 'stats': stats
             })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/onemap', methods=['POST'])
+def api_onemap():
+    """API endpoint to generate single map with color scheme selection."""
+    data = request.get_json()
+    race_id = data.get('race')
+    colormap = data.get('colormap', 'RdBu')  # Default to red/blue
+    
+    if not race_id:
+        return jsonify({'error': 'Race must be selected'}), 400
+    
+    try:
+        # Load race data
+        gdf, info = load_race_data(race_id)
+        
+        if gdf is None:
+            return jsonify({'error': info}), 500
+        
+        # Convert to WGS84 for Folium
+        gdf = gdf.to_crs('EPSG:4326')
+        
+        # Convert any Timestamp columns to strings
+        for col in gdf.columns:
+            if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+                gdf[col] = gdf[col].astype(str)
+        
+        # Get center for map
+        bounds = gdf.total_bounds
+        center_lat = (bounds[1] + bounds[3]) / 2
+        center_lon = (bounds[0] + bounds[2]) / 2
+        
+        # Create Folium map
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+        
+        # Choose colors based on colormap selection
+        if colormap == 'PRGn':
+            colors = ['#762a83', '#af8dc3', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#7fbf7b', '#1b7837']
+            caption = 'Democratic/Progressive Share'
+        else:  # Default RdBu
+            colors = ['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac']
+            caption = 'Democratic/Progressive Share'
+        
+        colormap_obj = cm.LinearColormap(
+            colors=colors,
+            vmin=0, vmax=1, caption=caption
+        )
+        
+        folium.GeoJson(
+            gdf,
+            style_function=lambda feature: {
+                'fillColor': colormap_obj(feature['properties']['D_share']) if feature['properties']['D_share'] is not None else 'gray',
+                'color': 'black', 'weight': 0.5, 'fillOpacity': 0.7,
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['PRECINCT', 'D_share', 'D_votes', 'R_votes', 'total'],
+                aliases=['Precinct:', 'Dem/Prog Share:', 'Dem/Prog Votes:', 'Rep/Cons Votes:', 'Total:'],
+                localize=True, sticky=False, labels=True,
+                style="background-color: white; border: 2px solid black; border-radius: 3px; box-shadow: 3px;",
+                max_width=300,
+            )
+        ).add_to(m)
+        colormap_obj.add_to(m)
+        plugins.Fullscreen().add_to(m)
+        
+        # Add title control
+        title_control = f'''
+        <script>
+            window.addEventListener('load', function() {{
+                var map = null;
+                for (var key in window) {{
+                    if (window[key] instanceof L.Map) {{
+                        map = window[key];
+                        break;
+                    }}
+                }}
+                if (map) {{
+                    var titleDiv = null;
+                    L.Control.Title = L.Control.extend({{
+                        onAdd: function(map) {{
+                            titleDiv = L.DomUtil.create('div', 'leaflet-control-title-dynamic');
+                            titleDiv.innerHTML = '{info['display_name']}';
+                            titleDiv.style.backgroundColor = 'white';
+                            titleDiv.style.border = '2px solid grey';
+                            titleDiv.style.borderRadius = '4px';
+                            titleDiv.style.padding = '10px';
+                            titleDiv.style.fontSize = '18px';
+                            titleDiv.style.fontWeight = 'bold';
+                            titleDiv.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                            titleDiv.style.maxWidth = '500px';
+                            titleDiv.style.display = 'none';
+                            return titleDiv;
+                        }}
+                    }});
+                    var titleControl = new L.Control.Title({{ position: 'topleft' }});
+                    titleControl.addTo(map);
+                    
+                    function updateTitleVisibility() {{
+                        if (titleDiv) {{
+                            var isFullscreen = document.fullscreenElement || 
+                                             document.webkitFullscreenElement || 
+                                             document.mozFullScreenElement ||
+                                             document.msFullscreenElement;
+                            titleDiv.style.display = isFullscreen ? 'block' : 'none';
+                        }}
+                    }}
+                    
+                    document.addEventListener('fullscreenchange', updateTitleVisibility);
+                    document.addEventListener('webkitfullscreenchange', updateTitleVisibility);
+                    document.addEventListener('mozfullscreenchange', updateTitleVisibility);
+                    document.addEventListener('MSFullscreenChange', updateTitleVisibility);
+                    
+                    if (map.on) {{
+                        map.on('fullscreenchange', updateTitleVisibility);
+                    }}
+                }}
+            }});
+        </script>
+        '''
+        m.get_root().html.add_child(folium.Element(title_control))
+        
+        # Add CSS for map sizing and colorbar positioning
+        fill_css = '''<style>
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .folium-map, #map, div.folium-map {
+                width: 100% !important;
+                height: 100% !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+            }
+            .leaflet-top.leaflet-right {
+                top: auto !important;
+                bottom: 10px !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) !important;
+            }
+        </style>'''
+        m.get_root().html.add_child(folium.Element(fill_css))
+        
+        # Add Home button
+        home_button = f'''
+        <script>
+            window.addEventListener('load', function() {{
+                var map = null;
+                for (var key in window) {{
+                    if (window[key] instanceof L.Map) {{
+                        map = window[key];
+                        break;
+                    }}
+                }}
+                if (map) {{
+                    L.Control.HomeButton = L.Control.extend({{
+                        onAdd: function(map) {{
+                            var button = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                            button.innerHTML = '🏠';
+                            button.style.backgroundColor = 'white';
+                            button.style.width = '34px';
+                            button.style.height = '34px';
+                            button.style.lineHeight = '34px';
+                            button.style.textAlign = 'center';
+                            button.style.cursor = 'pointer';
+                            button.style.fontSize = '18px';
+                            button.title = 'Reset to initial view';
+                            button.onclick = function() {{
+                                map.setView([{center_lat}, {center_lon}], 10);
+                            }};
+                            return button;
+                        }}
+                    }});
+                    var homeControl = new L.Control.HomeButton({{ position: 'topleft' }});
+                    homeControl.addTo(map);
+                }}
+            }});
+        </script>
+        '''
+        m.get_root().html.add_child(folium.Element(home_button))
+        
+        # Get HTML
+        map_html = m._repr_html_()
+        
+        # Calculate statistics
+        stats = {
+            'name': info['display_name'],
+            'pct': float(gdf['D_share'].mean() * 100),
+            'total_d': int(gdf['D_votes'].sum()),
+            'total_r': int(gdf['R_votes'].sum()),
+            'total': int(gdf['total'].sum())
+        }
+        
+        return jsonify({
+            'map': map_html,
+            'stats': stats
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
