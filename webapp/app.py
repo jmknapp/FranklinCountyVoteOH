@@ -20,6 +20,8 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from flask import Flask, render_template, request, jsonify
+from esda.moran import Moran, Moran_Local
+from libpysal.weights import Queen
 
 app = Flask(__name__)
 
@@ -776,6 +778,15 @@ def onemap():
     races = get_available_races()
     return render_template('onemap.html', races=races)
 
+
+@app.route('/cluster')
+def cluster():
+    """Geographic clustering analysis page."""
+    races = get_available_races()
+    # Exclude city council races
+    races = [r for r in races if r.get('race_type') != 'City Council']
+    return render_template('cluster.html', races=races)
+
 @app.route('/test')
 def test_interactive():
     """Link to test interactive maps."""
@@ -1128,6 +1139,256 @@ def api_onemap():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cluster', methods=['POST'])
+def api_cluster():
+    """API endpoint to compute spatial clustering statistics."""
+    data = request.get_json()
+    race_id = data.get('race')
+    
+    if not race_id:
+        return jsonify({'error': 'Race must be selected'}), 400
+    
+    try:
+        # Load race data
+        gdf, info = load_race_data(race_id)
+        
+        if gdf is None:
+            return jsonify({'error': info}), 500
+        
+        # Compute spatial weights (Queen contiguity)
+        w = Queen.from_dataframe(gdf)
+        w.transform = 'r'  # Row-standardize
+        
+        # Compute Global Moran's I
+        moran = Moran(gdf['D_share'], w)
+        
+        # Compute Local Moran's I (LISA)
+        lisa = Moran_Local(gdf['D_share'], w)
+        
+        # Classify LISA clusters
+        # 1 = High-High (HH), 2 = Low-Low (LL), 3 = Low-High (LH), 4 = High-Low (HL)
+        sig = lisa.p_sim < 0.05  # Significant at 5% level
+        clusters = lisa.q * sig  # 0 = not significant, 1=HH, 2=LL, 3=LH, 4=HL
+        
+        gdf['lisa_cluster'] = clusters
+        gdf['lisa_pvalue'] = lisa.p_sim
+        
+        # Convert to WGS84 for mapping
+        gdf = gdf.to_crs('EPSG:4326')
+        
+        # Convert Timestamp columns
+        for col in gdf.columns:
+            if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+                gdf[col] = gdf[col].astype(str)
+        
+        # Get center
+        bounds = gdf.total_bounds
+        center_lat = (bounds[1] + bounds[3]) / 2
+        center_lon = (bounds[0] + bounds[2]) / 2
+        
+        # Create map
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
+        
+        # Define colors for LISA clusters
+        def get_cluster_color(cluster):
+            if cluster == 1:
+                return '#0571b0'  # Blue - High-High (Democratic clusters)
+            elif cluster == 2:
+                return '#ca0020'  # Red - Low-Low (Republican clusters)
+            elif cluster == 3:
+                return '#f4a582'  # Light red - Low-High outliers
+            elif cluster == 4:
+                return '#92c5de'  # Light blue - High-Low outliers
+            else:
+                return '#e0e0e0'  # Gray - Not significant
+        
+        # Add GeoJSON layer
+        folium.GeoJson(
+            gdf,
+            style_function=lambda feature: {
+                'fillColor': get_cluster_color(feature['properties']['lisa_cluster']),
+                'color': 'black',
+                'weight': 0.5,
+                'fillOpacity': 0.7,
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['PRECINCT', 'D_share', 'lisa_cluster'],
+                aliases=['Precinct:', 'Dem Share:', 'Cluster Type:'],
+                localize=True,
+                sticky=False,
+                labels=True,
+                style="background-color: white; border: 2px solid black; border-radius: 3px;",
+                max_width=300,
+            )
+        ).add_to(m)
+        
+        # Add custom legend
+        legend_html = '''
+        <div style="position: fixed; 
+                    bottom: 50px; right: 50px; width: 220px; height: 200px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:14px; padding: 10px; border-radius: 5px;">
+            <p style="margin-bottom: 10px; font-weight: bold;">LISA Cluster Types</p>
+            <p><span style="background-color:#0571b0; width:20px; height:10px; display:inline-block;"></span> High-High (Dem clusters)</p>
+            <p><span style="background-color:#ca0020; width:20px; height:10px; display:inline-block;"></span> Low-Low (Rep clusters)</p>
+            <p><span style="background-color:#92c5de; width:20px; height:10px; display:inline-block;"></span> High-Low (Dem outliers)</p>
+            <p><span style="background-color:#f4a582; width:20px; height:10px; display:inline-block;"></span> Low-High (Rep outliers)</p>
+            <p><span style="background-color:#e0e0e0; width:20px; height:10px; display:inline-block;"></span> Not significant</p>
+        </div>
+        '''
+        m.get_root().html.add_child(folium.Element(legend_html))
+        
+        plugins.Fullscreen().add_to(m)
+        
+        # Add title control for fullscreen
+        title_control = f'''
+        <script>
+            window.addEventListener('load', function() {{
+                var map = null;
+                for (var key in window) {{
+                    if (window[key] instanceof L.Map) {{
+                        map = window[key];
+                        break;
+                    }}
+                }}
+                if (map) {{
+                    var titleDiv = null;
+                    L.Control.Title = L.Control.extend({{
+                        onAdd: function(map) {{
+                            titleDiv = L.DomUtil.create('div', 'leaflet-control-title-dynamic');
+                            titleDiv.innerHTML = 'Spatial Clusters: {info["display_name"]}';
+                            titleDiv.style.backgroundColor = 'white';
+                            titleDiv.style.border = '2px solid grey';
+                            titleDiv.style.borderRadius = '4px';
+                            titleDiv.style.padding = '10px';
+                            titleDiv.style.fontSize = '18px';
+                            titleDiv.style.fontWeight = 'bold';
+                            titleDiv.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+                            titleDiv.style.maxWidth = '500px';
+                            titleDiv.style.display = 'none';
+                            return titleDiv;
+                        }}
+                    }});
+                    var titleControl = new L.Control.Title({{ position: 'topleft' }});
+                    titleControl.addTo(map);
+                    
+                    function updateTitleVisibility() {{
+                        if (titleDiv) {{
+                            var isFullscreen = document.fullscreenElement || 
+                                             document.webkitFullscreenElement || 
+                                             document.mozFullScreenElement ||
+                                             document.msFullscreenElement;
+                            titleDiv.style.display = isFullscreen ? 'block' : 'none';
+                        }}
+                    }}
+                    
+                    document.addEventListener('fullscreenchange', updateTitleVisibility);
+                    document.addEventListener('webkitfullscreenchange', updateTitleVisibility);
+                    document.addEventListener('mozfullscreenchange', updateTitleVisibility);
+                    document.addEventListener('MSFullscreenChange', updateTitleVisibility);
+                    
+                    if (map.on) {{
+                        map.on('fullscreenchange', updateTitleVisibility);
+                    }}
+                }}
+            }});
+        </script>
+        '''
+        m.get_root().html.add_child(folium.Element(title_control))
+        
+        # Add CSS for map sizing
+        fill_css = '''<style>
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .folium-map, #map, div.folium-map {
+                width: 100% !important;
+                height: 100% !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+            }
+        </style>'''
+        m.get_root().html.add_child(folium.Element(fill_css))
+        
+        # Add Home button
+        home_button = f'''
+        <script>
+            window.addEventListener('load', function() {{
+                var map = null;
+                for (var key in window) {{
+                    if (window[key] instanceof L.Map) {{
+                        map = window[key];
+                        break;
+                    }}
+                }}
+                if (map) {{
+                    L.Control.HomeButton = L.Control.extend({{
+                        onAdd: function(map) {{
+                            var button = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                            button.innerHTML = '🏠';
+                            button.style.backgroundColor = 'white';
+                            button.style.width = '34px';
+                            button.style.height = '34px';
+                            button.style.lineHeight = '34px';
+                            button.style.textAlign = 'center';
+                            button.style.cursor = 'pointer';
+                            button.style.fontSize = '18px';
+                            button.title = 'Reset to initial view';
+                            button.onclick = function() {{
+                                map.setView([{center_lat}, {center_lon}], 10);
+                            }};
+                            return button;
+                        }}
+                    }});
+                    var homeControl = new L.Control.HomeButton({{ position: 'topleft' }});
+                    homeControl.addTo(map);
+                }}
+            }});
+        </script>
+        '''
+        m.get_root().html.add_child(folium.Element(home_button))
+        
+        # Get HTML
+        map_html = m._repr_html_()
+        
+        # Count cluster types
+        cluster_counts = {
+            'high_high': int((clusters == 1).sum()),
+            'low_low': int((clusters == 2).sum()),
+            'low_high': int((clusters == 3).sum()),
+            'high_low': int((clusters == 4).sum()),
+            'not_sig': int((clusters == 0).sum())
+        }
+        
+        # Calculate statistics
+        stats = {
+            'name': info['display_name'],
+            'morans_i': float(moran.I),
+            'morans_p': float(moran.p_sim),
+            'expected_i': float(moran.EI),
+            'clusters': cluster_counts,
+            'interpretation': 'Positive spatial autocorrelation - similar values cluster together' if moran.I > 0 else 
+                            'Negative spatial autocorrelation - dissimilar values cluster together' if moran.I < 0 else
+                            'Random spatial distribution'
+        }
+        
+        return jsonify({
+            'map': map_html,
+            'stats': stats
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5050)
