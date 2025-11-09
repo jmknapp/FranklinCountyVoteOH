@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Franklin County Vote Analysis - Single Map Viewer</title>
+    <title>Franklin County Vote Analysis - Geographic Clustering</title>
     <style>
         * {
             margin: 0;
@@ -40,6 +40,7 @@
         .subtitle {
             color: #718096;
             font-size: 1.1rem;
+            margin-bottom: 15px;
         }
         
         .nav-links {
@@ -65,16 +66,10 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         
-        .control-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 20px;
-        }
-        
         .control-item {
             display: flex;
             flex-direction: column;
+            margin-bottom: 20px;
         }
         
         label {
@@ -169,10 +164,6 @@
         
         #results {
             display: none;
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         
         .map-title {
@@ -182,7 +173,7 @@
             text-align: center;
             margin-bottom: 20px;
             padding: 15px;
-            background: #f7fafc;
+            background: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
         }
@@ -193,19 +184,22 @@
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 30px;
+            background: white;
         }
         
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
+            margin-bottom: 20px;
         }
         
         .stat-card {
-            background: #f7fafc;
+            background: white;
             padding: 20px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .stat-card h3 {
@@ -234,52 +228,55 @@
             color: #2d3748;
             font-weight: 600;
         }
+        
+        .explanation {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            line-height: 1.6;
+            color: #2d3748;
+        }
+        
+        .explanation h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🗺️ Franklin County Vote Analysis</h1>
-            <p class="subtitle">Single Map Viewer with Color Scheme Selection</p>
+            <h1>🗺️ Geographic Clustering Analysis</h1>
+            <p class="subtitle">Identify spatial clusters and outliers using Moran's I and LISA statistics</p>
             <div class="nav-links">
-                <a href="/">← Back to Comparison View</a>
-                <a href="/cluster">Geographic Clustering →</a>
-                <a href="/cartogram">Turnout Cartogram →</a>
+                <a href="/">Comparison View</a>
+                <a href="/onemap">Single Map View</a>
+                <a href="/cartogram">Turnout Cartogram</a>
             </div>
         </header>
         
         <div class="controls">
-            <div class="control-group">
-                <div class="control-item">
-                    <label for="race">Select Race/Issue:</label>
-                    <select id="race">
-                        <option value="">-- Select --</option>
-                        {% for race in races %}
-                        <option value="{{ race.id }}">
-                            {{ race.display_name }}{% if race.candidates %} - {{ race.candidates }}{% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="control-item">
-                    <label for="colormap">Color Scheme:</label>
-                    <select id="colormap">
-                        <option value="RdBu">Red/Blue (Traditional Political Colors)</option>
-                        <option value="PuOr">Purple/Orange (High Contrast)</option>
-                        <option value="PiYG">Pink/Yellow-Green (Alternative)</option>
-                    </select>
-                </div>
+            <div class="control-item">
+                <label for="race">Select Race/Issue:</label>
+                <select id="race">
+                    <option value="">-- Select --</option>
+                    {% for race in races %}
+                    <option value="{{ race.id }}">
+                        {{ race.display_name }}{% if race.candidates %} - {{ race.candidates }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
             
-            <button id="viewBtn" onclick="viewMap()">View Map</button>
+            <button id="analyzeBtn" onclick="analyzeClustering()">Analyze Clustering</button>
         </div>
         
         <div id="error"></div>
         
         <div id="loading">
             <div class="spinner"></div>
-            <p>Generating map... This may take a few moments.</p>
+            <p>Computing spatial statistics... This may take a few moments.</p>
         </div>
         
         <div id="results">
@@ -288,24 +285,61 @@
             
             <div class="stats">
                 <div class="stat-card">
-                    <h3>Vote Summary</h3>
+                    <h3>Global Spatial Autocorrelation</h3>
                     <div class="stat-row">
-                        <span class="stat-label" id="labelTotalD">Democratic/Progressive Votes:</span>
-                        <span class="stat-value" id="totalD">-</span>
+                        <span class="stat-label">Moran's I:</span>
+                        <span class="stat-value" id="moransI">-</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label" id="labelTotalR">Republican/Conservative Votes:</span>
-                        <span class="stat-value" id="totalR">-</span>
+                        <span class="stat-label">Expected I:</span>
+                        <span class="stat-value" id="expectedI">-</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label" id="labelPct">Dem/Prog Share:</span>
-                        <span class="stat-value" id="pct">-</span>
+                        <span class="stat-label">P-value:</span>
+                        <span class="stat-value" id="moransP">-</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label" id="labelTotal">Total Votes:</span>
-                        <span class="stat-value" id="totalVotes">-</span>
+                        <span class="stat-label">Significance:</span>
+                        <span class="stat-value" id="significance">-</span>
                     </div>
                 </div>
+                
+                <div class="stat-card">
+                    <h3>LISA Cluster Counts</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">High-High (Dem clusters):</span>
+                        <span class="stat-value" id="highHigh">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Low-Low (Rep clusters):</span>
+                        <span class="stat-value" id="lowLow">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">High-Low (Dem outliers):</span>
+                        <span class="stat-value" id="highLow">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Low-High (Rep outliers):</span>
+                        <span class="stat-value" id="lowHigh">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Not significant:</span>
+                        <span class="stat-value" id="notSig">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="explanation">
+                <h4>How to Interpret:</h4>
+                <p><strong>Moran's I</strong> measures global spatial autocorrelation (clustering). Values near +1 indicate strong clustering of similar values, 0 indicates random distribution, and -1 indicates dissimilar values cluster together.</p>
+                <p style="margin-top: 10px;"><strong>LISA clusters</strong> identify specific locations:</p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>High-High (Blue):</strong> Democratic precincts surrounded by Democratic precincts</li>
+                    <li><strong>Low-Low (Red):</strong> Republican precincts surrounded by Republican precincts</li>
+                    <li><strong>High-Low (Light Blue):</strong> Democratic precincts in Republican areas (outliers)</li>
+                    <li><strong>Low-High (Light Red):</strong> Republican precincts in Democratic areas (outliers)</li>
+                </ul>
+                <p style="margin-top: 10px;" id="interpretation"></p>
             </div>
         </div>
     </div>
@@ -315,20 +349,11 @@
             return new Intl.NumberFormat('en-US').format(Math.round(num));
         }
         
-        function formatPercent(num) {
-            return num.toFixed(1) + '%';
-        }
-        
-        async function viewMap() {
+        async function analyzeClustering() {
             const race = document.getElementById('race').value;
-            const colormap = document.getElementById('colormap').value;
             const errorDiv = document.getElementById('error');
             const loadingDiv = document.getElementById('loading');
             const resultsDiv = document.getElementById('results');
-            const labelTotalD = document.getElementById('labelTotalD');
-            const labelTotalR = document.getElementById('labelTotalR');
-            const labelPct = document.getElementById('labelPct');
-            const labelTotal = document.getElementById('labelTotal');
             
             // Hide previous results and errors
             errorDiv.style.display = 'none';
@@ -336,28 +361,28 @@
             
             // Validation
             if (!race) {
-                errorDiv.textContent = 'Please select a race to view.';
+                errorDiv.textContent = 'Please select a race to analyze.';
                 errorDiv.style.display = 'block';
                 return;
             }
             
             // Show loading
             loadingDiv.style.display = 'block';
-            document.getElementById('viewBtn').disabled = true;
+            document.getElementById('analyzeBtn').disabled = true;
             
             try {
-                const response = await fetch('/api/onemap', {
+                const response = await fetch('/api/cluster', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ race, colormap })
+                    body: JSON.stringify({ race })
                 });
                 
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to generate map');
+                    throw new Error(data.error || 'Failed to compute clustering');
                 }
                 
                 // Display map
@@ -365,27 +390,25 @@
                 mapContainer.innerHTML = data.map;
                 
                 // Update title
-                document.getElementById('mapTitle').textContent = data.stats.name;
+                document.getElementById('mapTitle').textContent = 'Spatial Clusters: ' + data.stats.name;
                 
-                if (data.stats.type === 'turnout') {
-                    labelTotalD.textContent = (data.stats.blue_label || 'Ballots Cast') + ':';
-                    document.getElementById('totalD').textContent = formatNumber(data.stats.ballots);
-                    labelTotalR.textContent = (data.stats.red_label || 'Non-Voters') + ':';
-                    document.getElementById('totalR').textContent = formatNumber(data.stats.non_voters);
-                    labelPct.textContent = (data.stats.share_label || 'Turnout Share') + ':';
-                    document.getElementById('pct').textContent = formatPercent(data.stats.turnout_pct);
-                    labelTotal.textContent = 'Registered Voters:';
-                    document.getElementById('totalVotes').textContent = formatNumber(data.stats.registered);
-                } else {
-                    labelTotalD.textContent = (data.stats.blue_label || 'Democratic/Progressive Votes') + ':';
-                    document.getElementById('totalD').textContent = formatNumber(data.stats.total_d);
-                    labelTotalR.textContent = (data.stats.red_label || 'Republican/Conservative Votes') + ':';
-                    document.getElementById('totalR').textContent = formatNumber(data.stats.total_r);
-                    labelPct.textContent = (data.stats.share_label || 'Dem/Prog Share') + ':';
-                    document.getElementById('pct').textContent = formatPercent(data.stats.pct);
-                    labelTotal.textContent = 'Total Votes:';
-                    document.getElementById('totalVotes').textContent = formatNumber(data.stats.total);
-                }
+                // Update Moran's I statistics
+                document.getElementById('moransI').textContent = data.stats.morans_i.toFixed(4);
+                document.getElementById('expectedI').textContent = data.stats.expected_i.toFixed(4);
+                document.getElementById('moransP').textContent = data.stats.morans_p.toFixed(4);
+                document.getElementById('significance').textContent = 
+                    data.stats.morans_p < 0.05 ? 'Significant (p < 0.05)' : 'Not significant';
+                
+                // Update cluster counts
+                document.getElementById('highHigh').textContent = formatNumber(data.stats.clusters.high_high);
+                document.getElementById('lowLow').textContent = formatNumber(data.stats.clusters.low_low);
+                document.getElementById('highLow').textContent = formatNumber(data.stats.clusters.high_low);
+                document.getElementById('lowHigh').textContent = formatNumber(data.stats.clusters.low_high);
+                document.getElementById('notSig').textContent = formatNumber(data.stats.clusters.not_sig);
+                
+                // Add interpretation
+                document.getElementById('interpretation').innerHTML = 
+                    '<strong>Interpretation:</strong> ' + data.stats.interpretation;
                 
                 // Show results
                 resultsDiv.style.display = 'block';
@@ -398,14 +421,14 @@
                 errorDiv.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
-                document.getElementById('viewBtn').disabled = false;
+                document.getElementById('analyzeBtn').disabled = false;
             }
         }
         
-        // Allow Enter key to trigger view
+        // Allow Enter key to trigger analysis
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                viewMap();
+                analyzeClustering();
             }
         });
     </script>

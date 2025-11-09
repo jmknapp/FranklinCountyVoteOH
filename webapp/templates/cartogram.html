@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Franklin County Vote Analysis - Turnout Cartogram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 500;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        select {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        select:hover {
+            border-color: #667eea;
+        }
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button {
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        #error {
+            display: none;
+            background: #fed7d7;
+            color: #c53030;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c53030;
+        }
+        .map-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        #mapContainer {
+            height: 700px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            background: white;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        .stat-label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+        .stat-value {
+            color: #2d3748;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ Turnout Cartogram</h1>
+            <p class="subtitle">Precinct shapes warped so area is proportional to ballots cast</p>
+            <div class="nav-links">
+                <a href="/">Comparison View</a>
+                <a href="/onemap">Single Map View</a>
+                <a href="/cluster">Geographic Clustering</a>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="control-item">
+                <label for="race">Select Dataset:</label>
+                <select id="race">
+                    {% for race in races %}
+                    <option value="{{ race.id }}">{{ race.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button id="cartogramBtn" onclick="viewCartogram()">Render Cartogram</button>
+        </div>
+
+        <div id="error"></div>
+
+        <div id="results" style="display:none;">
+            <div class="map-title" id="mapTitle"></div>
+            <div id="mapContainer"></div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Turnout Summary</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Ballots Cast:</span>
+                        <span class="stat-value" id="ballots">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Registered Voters:</span>
+                        <span class="stat-value" id="registered">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Non-Voters:</span>
+                        <span class="stat-value" id="nonVoters">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Turnout Rate:</span>
+                        <span class="stat-value" id="turnoutPct">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(Math.round(num));
+        }
+        function formatPercent(num) {
+            return num.toFixed(1) + '%';
+        }
+        async function viewCartogram() {
+            const race = document.getElementById('race').value;
+            const errorDiv = document.getElementById('error');
+            const resultsDiv = document.getElementById('results');
+
+            errorDiv.style.display = 'none';
+            resultsDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/cartogram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ race })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to render cartogram');
+                }
+                document.getElementById('mapContainer').innerHTML = data.map;
+                document.getElementById('mapTitle').textContent = data.stats.name;
+                document.getElementById('ballots').textContent = formatNumber(data.stats.ballots);
+                document.getElementById('registered').textContent = formatNumber(data.stats.registered);
+                document.getElementById('nonVoters').textContent = formatNumber(data.stats.non_voters);
+                document.getElementById('turnoutPct').textContent = formatPercent(data.stats.turnout_pct);
+                resultsDiv.style.display = 'block';
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', viewCartogram);
+    </script>
+</body>
+</html>

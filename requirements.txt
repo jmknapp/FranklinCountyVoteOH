@@ -18,6 +18,7 @@ xlrd>=2.0.1  # Excel file support for older .xls files
 flask>=3.0.0  # Web app for interactive comparisons
 esda>=2.8.0  # Spatial statistics for clustering analysis
 libpysal>=4.13.0  # Spatial weights for geographic analysis
+cartogram>=1.0.0  # Diffusion cartograms for turnout maps
 
 # Development dependencies
 pytest>=7.4.0

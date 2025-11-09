@@ -41,6 +41,9 @@ python scripts/preprocess_results.py data/raw/boe_downloads/2024_general_detail.
 
 # Extract 2025 turnout (ballots vs registered)
 python scripts/extract_turnout_2025.py
+
+# Build turnout cartogram (ballots scaled to area)
+python scripts/create_turnout_cartogram.py
 ```
 
 See `docs/HOUSE_RACES.md` for Congressional District analysis.

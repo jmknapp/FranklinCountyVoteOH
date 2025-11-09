@@ -11,17 +11,17 @@ from pathlib import Path
 
 import folium
 import folium.plugins as plugins
+from branca import colormap as cm
 import geopandas as gpd
 import matplotlib
 import pandas as pd
 import yaml
-from branca import colormap as cm
-
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
 from esda.moran import Moran, Moran_Local
 from flask import Flask, jsonify, render_template, request
 from libpysal.weights import Queen
+
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
@@ -29,6 +29,7 @@ app = Flask(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / 'data' / 'raw'
 SHAPEFILE_DIR = PROJECT_ROOT / 'data' / 'raw'
+CARTOGRAM_DIR = PROJECT_ROOT / 'data' / 'processed' / 'cartograms'
 METADATA_FILE = Path(__file__).parent / 'race_metadata.yaml'
 
 # Cache for shapefiles to avoid reloading
@@ -791,6 +792,20 @@ def cluster():
     races = [r for r in races if r.get('race_type') != 'City Council']
     return render_template('cluster.html', races=races)
 
+
+@app.route('/cartogram')
+def cartogram_page():
+    """Turnout cartogram view."""
+    turnout_races = [
+        r for r in get_available_races() if (r.get('type') or '').lower() == 'turnout'
+    ]
+    if not turnout_races:
+        turnout_races = [{
+            'id': 'results_2025_turnout',
+            'display_name': '2025 Turnout (Ballots vs Registered)'
+        }]
+    return render_template('cartogram.html', races=turnout_races)
+
 @app.route('/test')
 def test_interactive():
     """Link to test interactive maps."""
@@ -1434,6 +1449,157 @@ def api_cluster():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cartogram', methods=['POST'])
+def api_cartogram():
+    """API endpoint to render a turnout cartogram."""
+    data = request.get_json()
+    race_id = data.get('race') if data else None
+
+    if not race_id:
+        return jsonify({'error': 'Race must be selected'}), 400
+
+    cartogram_path = CARTOGRAM_DIR / f'{race_id}.geojson'
+    if not cartogram_path.exists():
+        script_cmd = 'python scripts/create_turnout_cartogram.py'
+        message = (
+            f"Cartogram file not found for {race_id}. Run {script_cmd} to generate it."
+        )
+        return jsonify({'error': message}), 500
+
+    try:
+        gdf = gpd.read_file(cartogram_path)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({'error': f'Failed to load cartogram: {exc}'}), 500
+
+    if gdf.crs and gdf.crs.to_string() != 'EPSG:4326':
+        gdf = gdf.to_crs('EPSG:4326')
+
+    # Convert datetime columns to strings for JSON serialization
+    for col in gdf.columns:
+        if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+            gdf[col] = gdf[col].astype(str)
+
+    if 'turnout_share' not in gdf.columns:
+        if {'ballots', 'registered'}.issubset(gdf.columns):
+            gdf['turnout_share'] = gdf['ballots'] / gdf['registered'].replace({0: pd.NA})
+            gdf['turnout_share'] = gdf['turnout_share'].fillna(0)
+        else:
+            return jsonify({'error': 'Cartogram missing turnout_share column'}), 500
+
+    gdf['turnout_pct'] = gdf.get('turnout_pct', gdf['turnout_share'] * 100)
+
+    bounds = gdf.total_bounds
+    center_lat = (bounds[1] + bounds[3]) / 2
+    center_lon = (bounds[0] + bounds[2]) / 2
+
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
+    color_scale = cm.LinearColormap(
+        colors=['#eff3ff', '#bdd7e7', '#6baed6', '#2171b5', '#08306b'],
+        vmin=0,
+        vmax=1,
+        caption='Turnout Share'
+    )
+
+    folium.GeoJson(
+        gdf,
+        style_function=lambda feature: {
+            'fillColor': color_scale(feature['properties'].get('turnout_share'))
+            if feature['properties'].get('turnout_share') is not None else '#cccccc',
+            'color': 'black',
+            'weight': 0.5,
+            'fillOpacity': 0.8,
+        },
+        tooltip=folium.GeoJsonTooltip(
+            fields=['PRECINCT', 'turnout_pct', 'ballots', 'registered', 'non_voters'],
+            aliases=['Precinct:', 'Turnout (%):', 'Ballots Cast:', 'Registered:', 'Non-Voters:'],
+            localize=True,
+            sticky=False,
+            labels=True,
+            style=(
+                "background-color: white; border: 2px solid black; border-radius: 3px;"
+                " box-shadow: 3px;"
+            ),
+            max_width=320,
+        )
+    ).add_to(m)
+    color_scale.add_to(m)
+    plugins.Fullscreen().add_to(m)
+
+    home_button = f'''
+    <script>
+        window.addEventListener('load', function() {{
+            var map = null;
+            for (var key in window) {{
+                if (window[key] instanceof L.Map) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+            if (map) {{
+                L.Control.HomeButton = L.Control.extend({{
+                    onAdd: function(map) {{
+                        var button = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                        button.innerHTML = '🏠';
+                        button.style.backgroundColor = 'white';
+                        button.style.width = '34px';
+                        button.style.height = '34px';
+                        button.style.lineHeight = '34px';
+                        button.style.textAlign = 'center';
+                        button.style.cursor = 'pointer';
+                        button.style.fontSize = '18px';
+                        button.title = 'Reset to initial view';
+                        button.onclick = function() {{
+                            map.setView([{center_lat}, {center_lon}], 10);
+                        }};
+                        return button;
+                    }}
+                }});
+                var homeControl = new L.Control.HomeButton({{ position: 'topleft' }});
+                homeControl.addTo(map);
+            }}
+        }});
+    </script>
+    '''
+    m.get_root().html.add_child(folium.Element(home_button))
+
+    fill_css = '''<style>
+        html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .folium-map, #map, div.folium-map {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+        }
+    </style>'''
+    m.get_root().html.add_child(folium.Element(fill_css))
+
+    map_html = m._repr_html_()
+
+    total_ballots = float(gdf['ballots'].sum())
+    total_registered = float(gdf['registered'].sum())
+    total_non_voters = float(gdf['non_voters'].sum())
+    turnout_pct = (total_ballots / total_registered * 100) if total_registered else 0.0
+
+    stats = {
+        'name': next((r['display_name'] for r in get_available_races() if r['id'] == race_id), race_id),
+        'type': 'turnout',
+        'ballots': int(total_ballots),
+        'registered': int(total_registered),
+        'non_voters': int(total_non_voters),
+        'turnout_pct': float(turnout_pct),
+    }
+
+    return jsonify({'map': map_html, 'stats': stats})
 
 
 if __name__ == '__main__':
