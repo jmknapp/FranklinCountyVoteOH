@@ -10,6 +10,9 @@ from pathlib import Path
 from io import BytesIO
 import base64
 
+import folium
+import folium.plugins as plugins
+from branca import colormap as cm
 import geopandas as gpd
 import pandas as pd
 import yaml
