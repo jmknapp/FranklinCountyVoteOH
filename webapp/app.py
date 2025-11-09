@@ -376,7 +376,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     maps_html = []
     
     # Map 1: Race 1
-    m1 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+    m1 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
     colormap1 = cm.LinearColormap(
         colors=['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac'],
         vmin=0, vmax=1, caption='Democratic/Progressive Share'
@@ -525,7 +525,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     m1.get_root().html.add_child(folium.Element(home_button))
     
     # Map 2: Race 2  
-    m2 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+    m2 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
     colormap2 = cm.LinearColormap(
         colors=['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac'],
         vmin=0, vmax=1, caption='Democratic/Progressive Share'
@@ -611,7 +611,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     m2.get_root().html.add_child(folium.Element(home_button))
     
     # Map 3: Difference
-    m3 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+    m3 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
     vmax_diff = max(abs(gdf_diff['difference'].min()), abs(gdf_diff['difference'].max()))
     colormap3 = cm.LinearColormap(
         colors=['#762a83', '#af8dc3', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#7fbf7b', '#1b7837'],
@@ -884,7 +884,7 @@ def api_onemap():
         center_lon = (bounds[0] + bounds[2]) / 2
         
         # Create Folium map
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
         
         # Choose colors based on colormap selection
         if colormap == 'PuOr':
