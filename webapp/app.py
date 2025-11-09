@@ -887,8 +887,13 @@ def api_onemap():
         m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='OpenStreetMap')
         
         # Choose colors based on colormap selection
-        if colormap == 'PRGn':
-            colors = ['#762a83', '#af8dc3', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#7fbf7b', '#1b7837']
+        if colormap == 'PuOr':
+            # Purple (high) to Orange (low) - good for difference maps, no green conflict
+            colors = ['#e66101', '#fdb863', '#fee0b6', '#f7f7f7', '#d8daeb', '#b2abd2', '#5e3c99']
+            caption = 'Democratic/Progressive Share'
+        elif colormap == 'PiYG':
+            # Pink to Yellow-Green - another alternative
+            colors = ['#c51b7d', '#e9a3c9', '#fde0ef', '#f7f7f7', '#e6f5d0', '#a1d76a', '#4d9221']
             caption = 'Democratic/Progressive Share'
         else:  # Default RdBu
             colors = ['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac']
