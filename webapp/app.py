@@ -4,23 +4,23 @@ Flask web app for comparing election results.
 Allows users to select two races/issues and generates comparison maps.
 """
 
-import os
-import re
-from pathlib import Path
-from io import BytesIO
 import base64
+import re
+from io import BytesIO
+from pathlib import Path
 
 import folium
 import folium.plugins as plugins
-from branca import colormap as cm
 import geopandas as gpd
+import matplotlib
 import pandas as pd
 import yaml
-import matplotlib
+from branca import colormap as cm
+
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
-from flask import Flask, render_template, request, jsonify
 from esda.moran import Moran, Moran_Local
+from flask import Flask, jsonify, render_template, request
 from libpysal.weights import Queen
 
 app = Flask(__name__)
@@ -37,7 +37,7 @@ SHAPEFILE_CACHE = {}
 # Load race metadata
 RACE_METADATA = {}
 if METADATA_FILE.exists():
-    with open(METADATA_FILE, 'r') as f:
+    with open(METADATA_FILE) as f:
         metadata_config = yaml.safe_load(f)
         RACE_METADATA = metadata_config.get('races', {})
 
@@ -47,9 +47,9 @@ def normalize_precinct_name(name):
     Converts abbreviations to full names and zero-pads ward numbers.
     """
     import re
-    
+
     name = str(name).strip().upper()
-    
+
     # Standardize common abbreviations to full names
     replacements = {
         'COLS ': 'COLUMBUS ',
@@ -66,25 +66,25 @@ def normalize_precinct_name(name):
         'DUB ': 'DUBLIN ',
         'GRANDVIEW': 'GRANDVIEW HEIGHTS',
     }
-    
+
     for abbrev, full in replacements.items():
         if name.startswith(abbrev):
             name = name.replace(abbrev, full, 1)
             break
-    
+
     # Zero-pad single-digit ward numbers
     # Match patterns like "BEXLEY 1-A" or "COLUMBUS 2-B" and convert to "01-A", "02-B"
     name = re.sub(r'(\s)(\d)(-[A-Z0-9])', r'\g<1>0\g<2>\g<3>', name)
-    
+
     return name
 
 def get_available_races():
     """Scan data/raw directory for available race results."""
     races = []
-    
+
     for csv_file in DATA_DIR.glob('results_*.csv'):
         filename = csv_file.stem  # Remove .csv extension
-        
+
         # Check if we have metadata for this race
         if filename in RACE_METADATA:
             metadata = RACE_METADATA[filename]
@@ -95,6 +95,8 @@ def get_available_races():
                 'display_name': metadata.get('display_name', filename),
                 'candidates': metadata.get('candidates', ''),
                 'description': metadata.get('description', ''),
+                'blue_label': metadata.get('blue_label', ''),
+                'red_label': metadata.get('red_label', ''),
                 'file_path': str(csv_file)
             })
         else:
@@ -103,7 +105,7 @@ def get_available_races():
             if match:
                 year = match.group(1)
                 race_type = match.group(2) if match.group(2) else 'president'
-                
+
                 # Create display name
                 if 'issue1' in race_type:
                     display_name = f"{year} State Issue 1"
@@ -118,7 +120,7 @@ def get_available_races():
                     display_name = f"{year} Governor"
                 else:
                     display_name = f"{year} {race_type.replace('_', ' ').title()}"
-                
+
                 races.append({
                     'id': filename,
                     'year': year,
@@ -126,39 +128,41 @@ def get_available_races():
                     'display_name': display_name,
                     'candidates': '',
                     'description': '',
+                    'blue_label': '',
+                    'red_label': '',
                     'file_path': str(csv_file)
                 })
-    
+
     # Sort by year (descending) then by type
     races.sort(key=lambda x: (x['year'], x['type']), reverse=True)
-    
+
     return races
 
 def get_shapefile_for_year(year):
     """Get the appropriate shapefile for a given year."""
     year_int = int(year)
-    
+
     # Use cached shapefile if available
     cache_key = f'shp_{year}'
     if cache_key in SHAPEFILE_CACHE:
         return SHAPEFILE_CACHE[cache_key]
-    
+
     # Find closest available shapefile
     # Priority: same year > next year > previous year
     shapefile_dirs = sorted(SHAPEFILE_DIR.glob('precincts_*'))
-    
+
     available_years = []
     for shp_dir in shapefile_dirs:
         match = re.match(r'precincts_(\d{4})', shp_dir.name)
         if match:
             available_years.append((int(match.group(1)), shp_dir))
-    
+
     if not available_years:
         return None
-    
+
     # Find closest year
     closest_year, closest_dir = min(available_years, key=lambda x: abs(x[0] - year_int))
-    
+
     # Find shapefile in directory
     # Try multiple common naming patterns
     possible_names = [
@@ -167,7 +171,7 @@ def get_shapefile_for_year(year):
         'Voting-Precincts-G*.shp',
         'Precincts*.shp'
     ]
-    
+
     shp_file = None
     for pattern in possible_names:
         if '*' in pattern:
@@ -180,14 +184,14 @@ def get_shapefile_for_year(year):
             if candidate.exists():
                 shp_file = candidate
                 break
-    
+
     if not shp_file:
         # Fallback: just get any .shp file
         shp_files = list(closest_dir.glob('*.shp'))
         if not shp_files:
             return None
         shp_file = shp_files[0]
-    
+
     # Load shapefile - try/except in case file is corrupted
     try:
         shp = gpd.read_file(shp_file)
@@ -197,17 +201,17 @@ def get_shapefile_for_year(year):
             shp_test = shp.copy().set_crs('EPSG:3735')
             test_wgs84 = shp_test.to_crs('EPSG:4326')
             bounds_wgs84 = test_wgs84.total_bounds
-            
+
             # Franklin County should be: Lon -83.3 to -82.7, Lat 39.7 to 40.2
             if -84 < bounds_wgs84[0] < -82 and 39 < bounds_wgs84[1] < 41:
                 shp = shp.set_crs('EPSG:3735')  # Ohio North is correct
             else:
                 shp = shp.set_crs('EPSG:3747')  # Fall back to Ohio South
-        
+
         # Standardize to Ohio South for consistency
         if shp.crs.to_string() != 'EPSG:3747':
             shp = shp.to_crs('EPSG:3747')
-    except Exception as e:
+    except Exception:
         # Try other .shp files in the directory
         for alt_shp in closest_dir.glob('*.shp'):
             if alt_shp != shp_file:
@@ -228,46 +232,46 @@ def get_shapefile_for_year(year):
                     continue
         else:
             return None
-    
+
     # Cache it
     SHAPEFILE_CACHE[cache_key] = shp
-    
+
     return shp
 
 def load_race_data(race_id):
     """Load race data and merge with appropriate shapefile."""
     races = get_available_races()
     race_info = next((r for r in races if r['id'] == race_id), None)
-    
+
     if not race_info:
         return None, None
-    
+
     # Load results
     results = pd.read_csv(race_info['file_path'])
     results['PRECINCT'] = results['PRECINCT'].str.strip().str.upper()
-    
+
     # Get shapefile for this year
     shp = get_shapefile_for_year(race_info['year'])
     if shp is None:
         return None, None
-    
+
     # Find precinct ID column in shapefile
     id_col = 'NAME'
     for col in ['NAME', 'PRECINCT', 'PRECINCT_N', 'PREC_NAME']:
         if col in shp.columns:
             id_col = col
             break
-    
+
     # Normalize IDs
     shp[id_col] = shp[id_col].astype(str).str.strip().str.upper()
-    
+
     # Merge
     gdf = shp.merge(results, left_on=id_col, right_on='PRECINCT', how='inner')
-    
+
     # Compute two-party share
     gdf['total'] = gdf['D_votes'] + gdf['R_votes']
     gdf['D_share'] = gdf['D_votes'] / gdf['total']
-    
+
     return gdf, race_info
 
 def create_comparison_map_static(race1_id, race2_id):
@@ -275,10 +279,10 @@ def create_comparison_map_static(race1_id, race2_id):
     # Load data for both races
     gdf1, info1 = load_race_data(race1_id)
     gdf2, info2 = load_race_data(race2_id)
-    
+
     if gdf1 is None or gdf2 is None:
         return None, "Failed to load race data"
-    
+
     # Compute difference
     # Need to align by precinct using normalized names for cross-year comparison
     id_col = 'NAME'
@@ -286,11 +290,11 @@ def create_comparison_map_static(race1_id, race2_id):
         if col in gdf1.columns:
             id_col = col
             break
-    
+
     # Create normalized precinct columns for matching
     gdf1['precinct_normalized'] = gdf1[id_col].apply(normalize_precinct_name)
     gdf2['precinct_normalized'] = gdf2[id_col].apply(normalize_precinct_name)
-    
+
     diff_df = gdf1[[id_col, 'precinct_normalized', 'D_share', 'geometry']].merge(
         gdf2[['precinct_normalized', 'D_share']],
         on='precinct_normalized',
@@ -298,44 +302,44 @@ def create_comparison_map_static(race1_id, race2_id):
     )
     diff_df['difference'] = diff_df['D_share_1'] - diff_df['D_share_2']
     gdf_diff = gpd.GeoDataFrame(diff_df, geometry='geometry', crs=gdf1.crs)
-    
+
     # Create figure with 3 panels
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(28, 10))
-    
+
     # Panel 1: Race 1
     gdf1.plot(column='D_share', ax=ax1, legend=True, cmap='RdBu',
               vmin=0, vmax=1, edgecolor='gray', linewidth=0.2,
               legend_kwds={'label': 'Democratic/Progressive Share', 'shrink': 0.8})
     ax1.set_title(info1['display_name'], fontsize=16, fontweight='bold')
     ax1.axis('off')
-    
+
     # Panel 2: Race 2
     gdf2.plot(column='D_share', ax=ax2, legend=True, cmap='RdBu',
               vmin=0, vmax=1, edgecolor='gray', linewidth=0.2,
               legend_kwds={'label': 'Democratic/Progressive Share', 'shrink': 0.8})
     ax2.set_title(info2['display_name'], fontsize=16, fontweight='bold')
     ax2.axis('off')
-    
+
     # Panel 3: Difference (using purple-green to avoid R/D confusion)
     vmax_diff = max(abs(gdf_diff['difference'].min()), abs(gdf_diff['difference'].max()))
     gdf_diff.plot(column='difference', ax=ax3, legend=True, cmap='PRGn',
                   vmin=-vmax_diff, vmax=vmax_diff, edgecolor='gray', linewidth=0.2,
                   legend_kwds={'label': 'Difference (Race 1 - Race 2)', 'shrink': 0.8})
-    ax3.set_title(f'Difference\n(Green = {info1["display_name"]} higher\nPurple = {info2["display_name"]} higher)', 
+    ax3.set_title(f'Difference\n(Green = {info1["display_name"]} higher\nPurple = {info2["display_name"]} higher)',
                   fontsize=14, fontweight='bold')
     ax3.axis('off')
-    
+
     plt.tight_layout()
-    
+
     # Save to BytesIO
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
     img_buffer.seek(0)
     plt.close(fig)
-    
+
     # Encode as base64 for embedding in HTML
     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-    
+
     # Calculate statistics
     stats = {
         'race1': {
@@ -357,42 +361,42 @@ def create_comparison_map_static(race1_id, race2_id):
             'max': float(diff_df['difference'].max() * 100)
         }
     }
-    
+
     return img_base64, stats
 
 def create_comparison_map_folium(race1_id, race2_id):
     """Create a 3-panel comparison with interactive Folium maps."""
+    import branca.colormap as cm
     import folium
     from folium import plugins
-    import branca.colormap as cm
-    
+
     # Load data for both races
     gdf1, info1 = load_race_data(race1_id)
     gdf2, info2 = load_race_data(race2_id)
-    
+
     if gdf1 is None or gdf2 is None:
         return None, "Failed to load race data"
-    
+
     # Convert to WGS84 for Folium
     gdf1 = gdf1.to_crs('EPSG:4326')
     gdf2 = gdf2.to_crs('EPSG:4326')
-    
+
     # Convert any Timestamp columns to strings
     for gdf in [gdf1, gdf2]:
         for col in gdf.columns:
             if pd.api.types.is_datetime64_any_dtype(gdf[col]):
                 gdf[col] = gdf[col].astype(str)
-    
+
     # Compute difference
     id_col = 'NAME'
     for col in ['NAME', 'PRECINCT', 'PRECINCT_N', 'PREC_NAME']:
         if col in gdf1.columns:
             id_col = col
             break
-    
+
     gdf1['precinct_normalized'] = gdf1[id_col].apply(normalize_precinct_name)
     gdf2['precinct_normalized'] = gdf2[id_col].apply(normalize_precinct_name)
-    
+
     diff_df = gdf1[[id_col, 'precinct_normalized', 'D_share', 'geometry', 'PRECINCT', 'D_votes', 'R_votes', 'total']].merge(
         gdf2[['precinct_normalized', 'D_share']],
         on='precinct_normalized',
@@ -400,15 +404,15 @@ def create_comparison_map_folium(race1_id, race2_id):
     )
     diff_df['difference'] = diff_df['D_share_1'] - diff_df['D_share_2']
     gdf_diff = gpd.GeoDataFrame(diff_df, geometry='geometry', crs=gdf1.crs)
-    
+
     # Get center for maps
     bounds = gdf1.total_bounds
     center_lat = (bounds[1] + bounds[3]) / 2
     center_lon = (bounds[0] + bounds[2]) / 2
-    
+
     # Create three Folium maps
     maps_html = []
-    
+
     # Map 1: Race 1
     m1 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
     colormap1 = cm.LinearColormap(
@@ -431,7 +435,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     ).add_to(m1)
     colormap1.add_to(m1)
     plugins.Fullscreen().add_to(m1)
-    
+
     # Add title as a Leaflet control (stays with map in fullscreen)
     title_control1 = f'''
     <script>
@@ -491,7 +495,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     </script>
     '''
     m1.get_root().html.add_child(folium.Element(title_control1))
-    
+
     # Force map to fill the entire iframe
     fill_css = '''<style>
         html, body {
@@ -519,7 +523,7 @@ def create_comparison_map_folium(race1_id, race2_id):
         }
     </style>'''
     m1.get_root().html.add_child(folium.Element(fill_css))
-    
+
     # Add Home button to reset view
     home_button = f'''
     <script>
@@ -557,8 +561,8 @@ def create_comparison_map_folium(race1_id, race2_id):
     </script>
     '''
     m1.get_root().html.add_child(folium.Element(home_button))
-    
-    # Map 2: Race 2  
+
+    # Map 2: Race 2
     m2 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
     colormap2 = cm.LinearColormap(
         colors=['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac'],
@@ -580,7 +584,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     ).add_to(m2)
     colormap2.add_to(m2)
     plugins.Fullscreen().add_to(m2)
-    
+
     # Add title as a Leaflet control (stays with map in fullscreen)
     title_control2 = f'''
     <script>
@@ -640,10 +644,10 @@ def create_comparison_map_folium(race1_id, race2_id):
     </script>
     '''
     m2.get_root().html.add_child(folium.Element(title_control2))
-    
+
     m2.get_root().html.add_child(folium.Element(fill_css))
     m2.get_root().html.add_child(folium.Element(home_button))
-    
+
     # Map 3: Difference
     m3 = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
     vmax_diff = max(abs(gdf_diff['difference'].min()), abs(gdf_diff['difference'].max()))
@@ -667,7 +671,7 @@ def create_comparison_map_folium(race1_id, race2_id):
     ).add_to(m3)
     colormap3.add_to(m3)
     plugins.Fullscreen().add_to(m3)
-    
+
     # Add title as a Leaflet control (stays with map in fullscreen)
     title_text3 = f"Difference (Green = {info1['display_name']} higher, Purple = {info2['display_name']} higher)"
     title_control3 = f'''
@@ -728,17 +732,17 @@ def create_comparison_map_folium(race1_id, race2_id):
     </script>
     '''
     m3.get_root().html.add_child(folium.Element(title_control3))
-    
+
     m3.get_root().html.add_child(folium.Element(fill_css))
     m3.get_root().html.add_child(folium.Element(home_button))
-    
+
     # Get the HTML for each map and wrap with unique IDs
     map1_html = m1._repr_html_().replace('<div', '<div id="map1"', 1)
     map2_html = m2._repr_html_().replace('<div', '<div id="map2"', 1)
     map3_html = m3._repr_html_().replace('<div', '<div id="map3"', 1)
-    
+
     maps_html = [map1_html, map2_html, map3_html]
-    
+
     # Calculate statistics (same as static version)
     stats = {
         'race1': {
@@ -760,7 +764,7 @@ def create_comparison_map_folium(race1_id, race2_id):
             'max': float(diff_df['difference'].max() * 100)
         }
     }
-    
+
     return maps_html, stats
 
 @app.route('/')
@@ -834,21 +838,20 @@ def test_interactive():
 def serve_test_map(map_name):
     """Serve test interactive maps."""
     from flask import send_file
-    import os
-    
+
     map_files = {
         'issue1': PROJECT_ROOT / 'test_map_2023_issue1.html',
         'president': PROJECT_ROOT / 'test_map_2024_president.html',
         'difference': PROJECT_ROOT / 'test_map_difference.html'
     }
-    
+
     if map_name not in map_files:
         return "Map not found", 404
-    
+
     file_path = map_files[map_name]
     if not file_path.exists():
-        return f"Map file not found. Run: python scripts/test_interactive_maps.py", 404
-    
+        return "Map file not found. Run: python scripts/test_interactive_maps.py", 404
+
     return send_file(file_path, mimetype='text/html')
 
 @app.route('/api/races')
@@ -864,20 +867,20 @@ def api_compare():
     race1_id = data.get('race1')
     race2_id = data.get('race2')
     mode = data.get('mode', 'static')  # Default to static for backward compatibility
-    
+
     if not race1_id or not race2_id:
         return jsonify({'error': 'Both races must be selected'}), 400
-    
+
     if race1_id == race2_id:
         return jsonify({'error': 'Please select two different races'}), 400
-    
+
     try:
         if mode == 'interactive':
             maps_html, stats = create_comparison_map_folium(race1_id, race2_id)
-            
+
             if maps_html is None:
                 return jsonify({'error': stats}), 500
-            
+
             return jsonify({
                 'mode': 'interactive',
                 'maps': maps_html,
@@ -885,10 +888,10 @@ def api_compare():
             })
         else:
             img_base64, stats = create_comparison_map_static(race1_id, race2_id)
-            
+
             if img_base64 is None:
                 return jsonify({'error': stats}), 500
-            
+
             return jsonify({
                 'mode': 'static',
                 'image': img_base64,
@@ -909,23 +912,23 @@ def extract_progressive_candidate_name(candidates_str):
     """
     if not candidates_str:
         return None
-    
+
     # Split on 'vs' and take the first candidate
     parts = candidates_str.split(' vs ')
     if not parts:
         return None
-    
+
     # Get first candidate (before "vs")
     first_candidate = parts[0].strip()
-    
+
     # Extract name before parentheses (e.g., "Vogel (Progressive)" -> "Vogel")
     name = first_candidate.split('(')[0].strip()
-    
+
     # If there are multiple words, take the last one as the last name
     name_parts = name.split()
     if name_parts:
         return name_parts[-1]
-    
+
     return None
 
 
@@ -935,54 +938,73 @@ def api_onemap():
     data = request.get_json()
     race_id = data.get('race')
     colormap = data.get('colormap', 'RdBu')  # Default to red/blue
-    
+
     if not race_id:
         return jsonify({'error': 'Race must be selected'}), 400
-    
+
     try:
         # Load race data
         gdf, info = load_race_data(race_id)
-        
+
         if gdf is None:
             return jsonify({'error': info}), 500
-        
+
+        race_type = (info.get('type') or info.get('race_type') or '').lower()
+        blue_label = info.get('blue_label') or 'Democratic/Progressive Votes'
+        red_label = info.get('red_label') or 'Republican/Conservative Votes'
+        share_label = 'Democratic/Progressive Share'
+        if race_type == 'turnout':
+            share_label = 'Turnout Share'
+        elif blue_label and red_label and race_type:
+            share_label = f'{blue_label.replace("Votes", "Share").strip()}'
+
+        # Extract progressive candidate's last name for caption/legend fallback
+        candidate_name = extract_progressive_candidate_name(info.get('candidates', ''))
+        if race_type == 'turnout':
+            candidate_name = info.get('blue_label') or 'Turnout'
+        elif not candidate_name and blue_label:
+            candidate_name = blue_label
+
         # Convert to WGS84 for Folium
         gdf = gdf.to_crs('EPSG:4326')
-        
+
         # Convert any Timestamp columns to strings
         for col in gdf.columns:
             if pd.api.types.is_datetime64_any_dtype(gdf[col]):
                 gdf[col] = gdf[col].astype(str)
-        
+
+        if race_type == 'turnout':
+            gdf['turnout_pct'] = (gdf['D_share'] * 100).round(1)
+
         # Get center for map
         bounds = gdf.total_bounds
         center_lat = (bounds[1] + bounds[3]) / 2
         center_lon = (bounds[0] + bounds[2]) / 2
-        
+
         # Create Folium map
         m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
-        
-        # Extract progressive candidate's last name for caption
-        candidate_name = extract_progressive_candidate_name(info.get('candidates', ''))
-        
+
         # Choose colors based on colormap selection
         if colormap == 'PuOr':
-            # Purple (high) to Orange (low) - good for difference maps, no green conflict
             colors = ['#e66101', '#fdb863', '#fee0b6', '#f7f7f7', '#d8daeb', '#b2abd2', '#5e3c99']
-            caption = f'{candidate_name} Share' if candidate_name else 'Democratic/Progressive Share'
         elif colormap == 'PiYG':
-            # Pink to Yellow-Green - another alternative
             colors = ['#c51b7d', '#e9a3c9', '#fde0ef', '#f7f7f7', '#e6f5d0', '#a1d76a', '#4d9221']
-            caption = f'{candidate_name} Share' if candidate_name else 'Democratic/Progressive Share'
         else:  # Default RdBu
             colors = ['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac']
-            caption = 'Democratic/Progressive Share'
-        
+        caption = share_label if share_label else (f'{candidate_name} Share' if candidate_name else 'Value Share')
+
         colormap_obj = cm.LinearColormap(
             colors=colors,
             vmin=0, vmax=1, caption=caption
         )
-        
+
+        if race_type == 'turnout':
+            tooltip_fields = ['PRECINCT', 'turnout_pct', 'ballots', 'registered', 'non_voters']
+            tooltip_aliases = ['Precinct:', 'Turnout (%):', 'Ballots Cast:', 'Registered Voters:', 'Non-Voters:']
+        else:
+            tooltip_fields = ['PRECINCT', 'D_share', 'D_votes', 'R_votes', 'total']
+            tooltip_aliases = ['Precinct:', f'{share_label}:', f'{blue_label}:', f'{red_label}:', 'Total Votes:']
+
         folium.GeoJson(
             gdf,
             style_function=lambda feature: {
@@ -990,8 +1012,8 @@ def api_onemap():
                 'color': 'black', 'weight': 0.5, 'fillOpacity': 0.7,
             },
             tooltip=folium.GeoJsonTooltip(
-                fields=['PRECINCT', 'D_share', 'D_votes', 'R_votes', 'total'],
-                aliases=['Precinct:', 'Dem/Prog Share:', 'Dem/Prog Votes:', 'Rep/Cons Votes:', 'Total:'],
+                fields=tooltip_fields,
+                aliases=tooltip_aliases,
                 localize=True, sticky=False, labels=True,
                 style="background-color: white; border: 2px solid black; border-radius: 3px; box-shadow: 3px;",
                 max_width=300,
@@ -999,7 +1021,7 @@ def api_onemap():
         ).add_to(m)
         colormap_obj.add_to(m)
         plugins.Fullscreen().add_to(m)
-        
+
         # Add title control
         title_control = f'''
         <script>
@@ -1055,7 +1077,7 @@ def api_onemap():
         </script>
         '''
         m.get_root().html.add_child(folium.Element(title_control))
-        
+
         # Add CSS for map sizing and colorbar positioning
         fill_css = '''<style>
             html, body {
@@ -1082,7 +1104,7 @@ def api_onemap():
             }
         </style>'''
         m.get_root().html.add_child(folium.Element(fill_css))
-        
+
         # Add Home button
         home_button = f'''
         <script>
@@ -1120,24 +1142,48 @@ def api_onemap():
         </script>
         '''
         m.get_root().html.add_child(folium.Element(home_button))
-        
+
         # Get HTML
         map_html = m._repr_html_()
-        
-        # Calculate statistics
-        stats = {
-            'name': info['display_name'],
-            'pct': float(gdf['D_share'].mean() * 100),
-            'total_d': int(gdf['D_votes'].sum()),
-            'total_r': int(gdf['R_votes'].sum()),
-            'total': int(gdf['total'].sum())
-        }
-        
+
+        total_d = float(gdf['D_votes'].sum())
+        total_r = float(gdf['R_votes'].sum())
+        total = float(gdf['total'].sum()) if 'total' in gdf.columns else total_d + total_r
+
+        if race_type == 'turnout':
+            turnout_pct = (total_d / total * 100) if total else 0.0
+            stats = {
+                'type': 'turnout',
+                'name': info['display_name'],
+                'turnout_pct': float(turnout_pct),
+                'ballots': int(total_d),
+                'registered': int(total),
+                'non_voters': int(total_r),
+                'blue_label': blue_label or 'Ballots Cast',
+                'red_label': red_label or 'Non-Voters',
+                'share_label': share_label
+            }
+        else:
+            pct = (total_d / (total_d + total_r) * 100) if (total_d + total_r) else 0.0
+            stats = {
+                'type': 'standard',
+                'name': info['display_name'],
+                'pct': float(pct),
+                'total_d': int(total_d),
+                'total_r': int(total_r),
+                'total': int(total_d + total_r),
+                'blue_label': blue_label,
+                'red_label': red_label,
+                'share_label': share_label
+            }
+
         return jsonify({
             'map': map_html,
             'stats': stats
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -1146,51 +1192,51 @@ def api_cluster():
     """API endpoint to compute spatial clustering statistics."""
     data = request.get_json()
     race_id = data.get('race')
-    
+
     if not race_id:
         return jsonify({'error': 'Race must be selected'}), 400
-    
+
     try:
         # Load race data
         gdf, info = load_race_data(race_id)
-        
+
         if gdf is None:
             return jsonify({'error': info}), 500
-        
+
         # Compute spatial weights (Queen contiguity)
         w = Queen.from_dataframe(gdf)
         w.transform = 'r'  # Row-standardize
-        
+
         # Compute Global Moran's I
         moran = Moran(gdf['D_share'], w)
-        
+
         # Compute Local Moran's I (LISA)
         lisa = Moran_Local(gdf['D_share'], w)
-        
+
         # Classify LISA clusters
         # 1 = High-High (HH), 2 = Low-Low (LL), 3 = Low-High (LH), 4 = High-Low (HL)
         sig = lisa.p_sim < 0.05  # Significant at 5% level
         clusters = lisa.q * sig  # 0 = not significant, 1=HH, 2=LL, 3=LH, 4=HL
-        
+
         gdf['lisa_cluster'] = clusters
         gdf['lisa_pvalue'] = lisa.p_sim
-        
+
         # Convert to WGS84 for mapping
         gdf = gdf.to_crs('EPSG:4326')
-        
+
         # Convert Timestamp columns
         for col in gdf.columns:
             if pd.api.types.is_datetime64_any_dtype(gdf[col]):
                 gdf[col] = gdf[col].astype(str)
-        
+
         # Get center
         bounds = gdf.total_bounds
         center_lat = (bounds[1] + bounds[3]) / 2
         center_lon = (bounds[0] + bounds[2]) / 2
-        
+
         # Create map
         m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
-        
+
         # Define colors for LISA clusters
         def get_cluster_color(cluster):
             if cluster == 1:
@@ -1203,7 +1249,7 @@ def api_cluster():
                 return '#92c5de'  # Light blue - High-Low outliers
             else:
                 return '#e0e0e0'  # Gray - Not significant
-        
+
         # Add GeoJSON layer
         folium.GeoJson(
             gdf,
@@ -1223,7 +1269,7 @@ def api_cluster():
                 max_width=300,
             )
         ).add_to(m)
-        
+
         # Add custom legend
         legend_html = '''
         <div style="position: fixed; 
@@ -1239,9 +1285,9 @@ def api_cluster():
         </div>
         '''
         m.get_root().html.add_child(folium.Element(legend_html))
-        
+
         plugins.Fullscreen().add_to(m)
-        
+
         # Add title control for fullscreen
         title_control = f'''
         <script>
@@ -1297,7 +1343,7 @@ def api_cluster():
         </script>
         '''
         m.get_root().html.add_child(folium.Element(title_control))
-        
+
         # Add CSS for map sizing
         fill_css = '''<style>
             html, body {
@@ -1317,7 +1363,7 @@ def api_cluster():
             }
         </style>'''
         m.get_root().html.add_child(folium.Element(fill_css))
-        
+
         # Add Home button
         home_button = f'''
         <script>
@@ -1355,10 +1401,10 @@ def api_cluster():
         </script>
         '''
         m.get_root().html.add_child(folium.Element(home_button))
-        
+
         # Get HTML
         map_html = m._repr_html_()
-        
+
         # Count cluster types
         cluster_counts = {
             'high_high': int((clusters == 1).sum()),
@@ -1367,7 +1413,7 @@ def api_cluster():
             'high_low': int((clusters == 4).sum()),
             'not_sig': int((clusters == 0).sum())
         }
-        
+
         # Calculate statistics
         stats = {
             'name': info['display_name'],
@@ -1375,11 +1421,11 @@ def api_cluster():
             'morans_p': float(moran.p_sim),
             'expected_i': float(moran.EI),
             'clusters': cluster_counts,
-            'interpretation': 'Positive spatial autocorrelation - similar values cluster together' if moran.I > 0 else 
+            'interpretation': 'Positive spatial autocorrelation - similar values cluster together' if moran.I > 0 else
                             'Negative spatial autocorrelation - dissimilar values cluster together' if moran.I < 0 else
                             'Random spatial distribution'
         }
-        
+
         return jsonify({
             'map': map_html,
             'stats': stats

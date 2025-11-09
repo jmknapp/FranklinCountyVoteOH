@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Franklin County Vote Analysis - Single Map Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .nav-links {
+            margin-top: 15px;
+        }
+        
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 500;
+        }
+        
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .control-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .control-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        select {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        select:hover {
+            border-color: #667eea;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #error {
+            display: none;
+            background: #fed7d7;
+            color: #c53030;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c53030;
+        }
+        
+        #results {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .map-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        #mapContainer {
+            height: 700px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stat-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            color: #2d3748;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ Franklin County Vote Analysis</h1>
+            <p class="subtitle">Single Map Viewer with Color Scheme Selection</p>
+            <div class="nav-links">
+                <a href="/">← Back to Comparison View</a>
+                <a href="/cluster">Geographic Clustering →</a>
+            </div>
+        </header>
+        
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-item">
+                    <label for="race">Select Race/Issue:</label>
+                    <select id="race">
+                        <option value="">-- Select --</option>
+                        {% for race in races %}
+                        <option value="{{ race.id }}">
+                            {{ race.display_name }}{% if race.candidates %} - {{ race.candidates }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label for="colormap">Color Scheme:</label>
+                    <select id="colormap">
+                        <option value="RdBu">Red/Blue (Traditional Political Colors)</option>
+                        <option value="PuOr">Purple/Orange (High Contrast)</option>
+                        <option value="PiYG">Pink/Yellow-Green (Alternative)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="viewBtn" onclick="viewMap()">View Map</button>
+        </div>
+        
+        <div id="error"></div>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Generating map... This may take a few moments.</p>
+        </div>
+        
+        <div id="results">
+            <div class="map-title" id="mapTitle"></div>
+            <div id="mapContainer"></div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Vote Summary</h3>
+                    <div class="stat-row">
+                        <span class="stat-label" id="labelTotalD">Democratic/Progressive Votes:</span>
+                        <span class="stat-value" id="totalD">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" id="labelTotalR">Republican/Conservative Votes:</span>
+                        <span class="stat-value" id="totalR">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" id="labelPct">Dem/Prog Share:</span>
+                        <span class="stat-value" id="pct">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label" id="labelTotal">Total Votes:</span>
+                        <span class="stat-value" id="totalVotes">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(Math.round(num));
+        }
+        
+        function formatPercent(num) {
+            return num.toFixed(1) + '%';
+        }
+        
+        async function viewMap() {
+            const race = document.getElementById('race').value;
+            const colormap = document.getElementById('colormap').value;
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            const labelTotalD = document.getElementById('labelTotalD');
+            const labelTotalR = document.getElementById('labelTotalR');
+            const labelPct = document.getElementById('labelPct');
+            const labelTotal = document.getElementById('labelTotal');
+            
+            // Hide previous results and errors
+            errorDiv.style.display = 'none';
+            resultsDiv.style.display = 'none';
+            
+            // Validation
+            if (!race) {
+                errorDiv.textContent = 'Please select a race to view.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Show loading
+            loadingDiv.style.display = 'block';
+            document.getElementById('viewBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/onemap', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ race, colormap })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to generate map');
+                }
+                
+                // Display map
+                const mapContainer = document.getElementById('mapContainer');
+                mapContainer.innerHTML = data.map;
+                
+                // Update title
+                document.getElementById('mapTitle').textContent = data.stats.name;
+                
+                if (data.stats.type === 'turnout') {
+                    labelTotalD.textContent = (data.stats.blue_label || 'Ballots Cast') + ':';
+                    document.getElementById('totalD').textContent = formatNumber(data.stats.ballots);
+                    labelTotalR.textContent = (data.stats.red_label || 'Non-Voters') + ':';
+                    document.getElementById('totalR').textContent = formatNumber(data.stats.non_voters);
+                    labelPct.textContent = (data.stats.share_label || 'Turnout Share') + ':';
+                    document.getElementById('pct').textContent = formatPercent(data.stats.turnout_pct);
+                    labelTotal.textContent = 'Registered Voters:';
+                    document.getElementById('totalVotes').textContent = formatNumber(data.stats.registered);
+                } else {
+                    labelTotalD.textContent = (data.stats.blue_label || 'Democratic/Progressive Votes') + ':';
+                    document.getElementById('totalD').textContent = formatNumber(data.stats.total_d);
+                    labelTotalR.textContent = (data.stats.red_label || 'Republican/Conservative Votes') + ':';
+                    document.getElementById('totalR').textContent = formatNumber(data.stats.total_r);
+                    labelPct.textContent = (data.stats.share_label || 'Dem/Prog Share') + ':';
+                    document.getElementById('pct').textContent = formatPercent(data.stats.pct);
+                    labelTotal.textContent = 'Total Votes:';
+                    document.getElementById('totalVotes').textContent = formatNumber(data.stats.total);
+                }
+                
+                // Show results
+                resultsDiv.style.display = 'block';
+                
+                // Scroll to results
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+            } catch (error) {
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+                document.getElementById('viewBtn').disabled = false;
+            }
+        }
+        
+        // Allow Enter key to trigger view
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                viewMap();
+            }
+        });
+    </script>
+</body>
+</html>
+

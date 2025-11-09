@@ -38,6 +38,9 @@ python scripts/preprocess_results.py data/raw/boe_downloads/2024_general_detail.
     --detail-file \
     --extract-house \
     --year 2024
+
+# Extract 2025 turnout (ballots vs registered)
+python scripts/extract_turnout_2025.py
 ```
 
 See `docs/HOUSE_RACES.md` for Congressional District analysis.

@@ -18,6 +18,15 @@ races:
     candidates: "Vogel (Progressive) vs Ross (Conservative)"
     description: "Non-partisan city council race"
     blue_side: "D"  # D_votes = Vogel (progressive)
+  results_2025_turnout:
+    display_name: "2025 Turnout (Ballots vs Registered)"
+    race_type: "Turnout"
+    year: 2025
+    description: "Ballots cast as share of registered voters"
+    candidates: "Ballots Cast vs Non-Voters"
+    blue_label: "Ballots Cast"
+    red_label: "Non-Voters"
+    blue_side: "D"
     
   # 2024 Elections
   results_2024:
