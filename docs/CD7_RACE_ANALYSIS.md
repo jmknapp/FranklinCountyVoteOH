@@ -282,3 +282,9 @@ The race reveals that in Columbus, as in many cities, the fault line within the 
 
 **Date**: November 9, 2025
 
+---
+
+**Author**: Joe Knapp (jmknapp@gmail.com)
+
+*This analysis was produced with the help of Anthropic's Claude Sonnet 4.5 AI.*
+
