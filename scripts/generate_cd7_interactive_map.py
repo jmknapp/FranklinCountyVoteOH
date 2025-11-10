@@ -54,25 +54,6 @@ def main():
     # Add fullscreen button
     Fullscreen(position='topleft').add_to(m)
     
-    # Add home button (reset view)
-    home_button_js = f"""
-    L.Control.HomeButton = L.Control.extend({{
-        onAdd: function(map) {{
-            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-            container.innerHTML = '<a href="#" title="Reset view" style="font-size:18px;line-height:30px;width:30px;height:30px;display:block;text-align:center;text-decoration:none;color:#333;background:white;">🏠</a>';
-            container.onclick = function(){{
-                map.setView([{center_lat}, {center_lon}], 11);
-                return false;
-            }};
-            return container;
-        }}
-    }});
-    L.control.homeButton = function(opts) {{
-        return new L.Control.HomeButton(opts);
-    }};
-    L.control.homeButton({{ position: 'topleft' }}).addTo(this);
-    """
-    
     # Create color scale (purple = Ross, orange = Vogel, white = 50-50)
     def get_color(vogel_share):
         if pd.isna(vogel_share):
@@ -147,8 +128,41 @@ def main():
     """
     m.get_root().html.add_child(folium.Element(legend_html))
     
-    # Add home button after map is created
-    m.get_root().script.add_child(folium.Element(home_button_js))
+    # Add home button via JavaScript after map is initialized
+    home_button_js = f"""
+    <script>
+    // Wait for map to be fully initialized
+    document.addEventListener('DOMContentLoaded', function() {{
+        // Find the map object
+        var mapElements = document.querySelectorAll('[id^="map_"]');
+        if (mapElements.length > 0) {{
+            var mapId = mapElements[0].id;
+            var map = window[mapId];
+            
+            // Add home button control
+            L.Control.HomeButton = L.Control.extend({{
+                onAdd: function(map) {{
+                    var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                    container.innerHTML = '<a href="#" title="Reset view" style="font-size:18px;line-height:30px;width:30px;height:30px;display:block;text-align:center;text-decoration:none;color:#333;background:white;">🏠</a>';
+                    container.onclick = function(){{
+                        map.setView([{center_lat}, {center_lon}], 11);
+                        return false;
+                    }};
+                    return container;
+                }},
+                onRemove: function(map) {{}}
+            }});
+            
+            L.control.homeButton = function(opts) {{
+                return new L.Control.HomeButton(opts);
+            }};
+            
+            L.control.homeButton({{ position: 'topleft' }}).addTo(map);
+        }}
+    }});
+    </script>
+    """
+    m.get_root().html.add_child(folium.Element(home_button_js))
     
     # Save
     output_path = 'docs/cd7_election_map.html'
