@@ -46,6 +46,7 @@ rsync -av --delete "$PROJECT_ROOT/data/processed/" "$DEPLOY_DIR/data/processed/"
 # Copy documentation and analysis pages
 echo "Copying documentation and analysis pages..."
 cp "$PROJECT_ROOT/docs/CD7_RACE_ANALYSIS.html" "$DEPLOY_DIR/docs/"
+cp "$PROJECT_ROOT/docs/CD7_RACE_ANALYSIS_CONCISE.md" "$DEPLOY_DIR/docs/"
 cp "$PROJECT_ROOT/docs/cd7_election_map.html" "$DEPLOY_DIR/docs/"
 cp "$PROJECT_ROOT/README.md" "$DEPLOY_DIR/docs/"
 
