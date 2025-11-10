@@ -109,14 +109,12 @@ def main():
                 background-color: white; border:2px solid grey; z-index:9999; 
                 font-size:14px; padding: 10px; border-radius: 5px;
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.3);">
-        <p style="margin:0 0 10px 0; font-weight:bold;">Vogel Share</p>
         <div style="display:flex; height:20px; margin-bottom:5px;">
             <div style="flex:1; background: linear-gradient(to right, #9e3c96, #ffffff, #ff9632);"></div>
         </div>
-        <div style="display:flex; justify-content:space-between; font-size:12px;">
-            <span>0% (Ross)</span>
-            <span>50%</span>
-            <span>100% (Vogel)</span>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;">
+            <span><b>Ross</b></span>
+            <span><b>Vogel</b></span>
         </div>
         <hr style="margin:10px 0;">
         <p style="margin:0; font-size:12px; color:#666;">
