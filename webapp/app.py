@@ -268,6 +268,15 @@ def load_race_data(race_id):
 
     # Merge
     gdf = shp.merge(results, left_on=id_col, right_on='PRECINCT', how='inner')
+    
+    # Clean up duplicate PRECINCT columns from merge
+    if 'PRECINCT_x' in gdf.columns:
+        gdf['PRECINCT'] = gdf['PRECINCT_x']
+        gdf = gdf.drop(columns=['PRECINCT_x', 'PRECINCT_y'], errors='ignore')
+    elif id_col != 'PRECINCT' and id_col in gdf.columns:
+        # If we merged on a different column, ensure PRECINCT exists
+        if 'PRECINCT' not in gdf.columns:
+            gdf['PRECINCT'] = gdf[id_col]
 
     # Compute two-party share
     gdf['total'] = gdf['D_votes'] + gdf['R_votes']
@@ -805,6 +814,20 @@ def cartogram_page():
             'display_name': '2025 Turnout (Ballots vs Registered)'
         }]
     return render_template('cartogram.html', races=turnout_races)
+
+@app.route('/demographics')
+def demographics_page():
+    """Demographics analysis view."""
+    races = [r for r in get_available_races() if r.get('type') not in ['City Council', 'turnout']]
+    
+    # Check if demographic analysis outputs exist
+    analysis_dir = PROJECT_ROOT / 'data' / 'processed' / 'demographic_analysis'
+    available_analyses = []
+    if analysis_dir.exists():
+        for png_file in analysis_dir.glob('*.png'):
+            available_analyses.append(png_file.name)
+    
+    return render_template('demographics.html', races=races, analyses=available_analyses)
 
 @app.route('/test')
 def test_interactive():
@@ -1488,6 +1511,11 @@ def api_cartogram():
         else:
             return jsonify({'error': 'Cartogram missing turnout_share column'}), 500
 
+    # Prefer Vogel share if provided; fallback to turnout share
+    value_field = 'vogel_share' if 'vogel_share' in gdf.columns else 'turnout_share'
+    caption = 'Vogel Share' if value_field == 'vogel_share' else 'Turnout Share'
+
+    gdf['vogel_share_pct'] = gdf.get('vogel_share', gdf['turnout_share']) * 100
     gdf['turnout_pct'] = gdf.get('turnout_pct', gdf['turnout_share'] * 100)
 
     bounds = gdf.total_bounds
@@ -1495,25 +1523,37 @@ def api_cartogram():
     center_lon = (bounds[0] + bounds[2]) / 2
 
     m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
-    color_scale = cm.LinearColormap(
-        colors=['#eff3ff', '#bdd7e7', '#6baed6', '#2171b5', '#08306b'],
-        vmin=0,
-        vmax=1,
-        caption='Turnout Share'
-    )
+    
+    # Use different color scales based on what we're showing
+    if value_field == 'vogel_share':
+        # Purple (Ross) to white to orange (Vogel) for Vogel share
+        color_scale = cm.LinearColormap(
+            colors=['#9e3c96', '#d5a6d1', '#ffffff', '#feb24c', '#f03b20'],
+            vmin=0,
+            vmax=1,
+            caption=caption
+        )
+    else:
+        # Red to yellow to green for turnout
+        color_scale = cm.LinearColormap(
+            colors=['#d7301f', '#fc8d59', '#fee08b', '#d9ef8b', '#1a9850'],
+            vmin=0,
+            vmax=1,
+            caption=caption
+        )
 
     folium.GeoJson(
         gdf,
         style_function=lambda feature: {
-            'fillColor': color_scale(feature['properties'].get('turnout_share'))
-            if feature['properties'].get('turnout_share') is not None else '#cccccc',
+            'fillColor': color_scale(feature['properties'].get(value_field))
+            if feature['properties'].get(value_field) is not None else '#cccccc',
             'color': 'black',
             'weight': 0.5,
             'fillOpacity': 0.8,
         },
         tooltip=folium.GeoJsonTooltip(
-            fields=['PRECINCT', 'turnout_pct', 'ballots', 'registered', 'non_voters'],
-            aliases=['Precinct:', 'Turnout (%):', 'Ballots Cast:', 'Registered:', 'Non-Voters:'],
+            fields=['PRECINCT', 'vogel_share_pct', 'ballots', 'registered', 'non_voters'],
+            aliases=['Precinct:', 'Vogel Share (%):', 'Ballots Cast:', 'Registered:', 'Non-Voters:'],
             localize=True,
             sticky=False,
             labels=True,
@@ -1600,6 +1640,212 @@ def api_cartogram():
     }
 
     return jsonify({'map': map_html, 'stats': stats})
+
+
+@app.route('/api/demographics_map', methods=['POST'])
+def api_demographics_map():
+    """API endpoint to render a demographic overlay map."""
+    data = request.get_json()
+    race_id = data.get('race')
+    demo_var = data.get('demo_var', 'median_income')
+    
+    if not race_id:
+        return jsonify({'error': 'Race must be selected'}), 400
+    
+    # Load voting data
+    vote_path = DATA_DIR / f'{race_id}.csv'
+    if not vote_path.exists():
+        return jsonify({'error': f'Voting data not found for {race_id}'}), 404
+    
+    votes = pd.read_csv(vote_path)
+    votes['PRECINCT'] = votes['PRECINCT'].str.strip().str.upper()
+    votes['D_share'] = votes['D_votes'] / (votes['D_votes'] + votes['R_votes'])
+    
+    # Load demographics
+    demo_path = PROJECT_ROOT / 'data' / 'processed' / 'demographics_by_precinct_2025.csv'
+    if not demo_path.exists():
+        return jsonify({'error': 'Demographics data not found'}), 404
+    
+    demographics = pd.read_csv(demo_path)
+    demographics['PRECINCT'] = demographics['PRECINCT'].str.strip().str.upper()
+    
+    # Merge
+    merged = votes.merge(demographics, on='PRECINCT', how='inner')
+    
+    # Clean data
+    merged = merged[(merged['D_votes'] > 0) | (merged['R_votes'] > 0)].copy()
+    merged.loc[merged['median_income'] < 0, 'median_income'] = pd.NA
+    
+    # Load shapefile
+    race_year = RACE_METADATA.get(race_id, {}).get('year', '2025')
+    gdf = get_shapefile_for_year(race_year)
+    if gdf is None:
+        return jsonify({'error': f'Shapefile not found for year {race_year}'}), 404
+    
+    # Determine precinct ID column
+    precinct_col = next((col for col in ['NAME', 'PRECINCT', 'PRECINCTID'] if col in gdf.columns), None)
+    if not precinct_col:
+        return jsonify({'error': 'Could not identify precinct column in shapefile'}), 500
+    
+    gdf['PRECINCT'] = gdf[precinct_col].str.strip().str.upper()
+    
+    # Merge with data
+    gdf = gdf.merge(merged[['PRECINCT', 'D_share', demo_var]], on='PRECINCT', how='left')
+    
+    # Ensure WGS84
+    if gdf.crs is not None and gdf.crs.to_string() != 'EPSG:4326':
+        gdf = gdf.to_crs('EPSG:4326')
+    
+    # Remove rows with no data
+    gdf = gdf[gdf['D_share'].notna() & gdf[demo_var].notna()].copy()
+    
+    # Convert datetime columns to strings for JSON serialization
+    for col in gdf.columns:
+        if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+            gdf[col] = gdf[col].astype(str)
+    
+    # Create map
+    bounds = gdf.total_bounds
+    center_lat = (bounds[1] + bounds[3]) / 2
+    center_lon = (bounds[0] + bounds[2]) / 2
+    
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles='CartoDB positron')
+    
+    # Create choropleth colored by demographic variable
+    demo_labels = {
+        'median_income': ('Median Income', '$'),
+        'median_age': ('Median Age', ' years'),
+        'pct_college': ('% College Degree', '%'),
+        'pct_white': ('% White (NH)', '%'),
+        'pct_black': ('% Black', '%'),
+        'pct_hispanic': ('% Hispanic', '%'),
+        'total_pop': ('Total Population', ''),
+    }
+    
+    demo_label, demo_unit = demo_labels.get(demo_var, (demo_var, ''))
+    
+    # Color by demographic variable
+    vmin = gdf[demo_var].quantile(0.05)
+    vmax = gdf[demo_var].quantile(0.95)
+    
+    color_scale = cm.LinearColormap(
+        colors=['#ffffcc', '#a1dab4', '#41b6c4', '#2c7fb8', '#253494'],
+        vmin=vmin,
+        vmax=vmax,
+        caption=demo_label
+    )
+    
+    folium.GeoJson(
+        gdf,
+        style_function=lambda feature: {
+            'fillColor': color_scale(feature['properties'].get(demo_var))
+            if feature['properties'].get(demo_var) is not None else '#cccccc',
+            'color': 'black',
+            'weight': 0.5,
+            'fillOpacity': 0.7,
+        },
+        tooltip=folium.GeoJsonTooltip(
+            fields=['PRECINCT', demo_var, 'D_share'],
+            aliases=['Precinct:', f'{demo_label}:', 'Dem Share:'],
+            localize=True,
+            sticky=False,
+            labels=True,
+            style="background-color: white; border: 2px solid black; border-radius: 3px;",
+            max_width=300,
+        )
+    ).add_to(m)
+    
+    color_scale.add_to(m)
+    plugins.Fullscreen().add_to(m)
+    
+    # Add home button
+    home_button = f'''
+    <script>
+        window.addEventListener('load', function() {{
+            var map = null;
+            for (var key in window) {{
+                if (window[key] instanceof L.Map) {{
+                    map = window[key];
+                    break;
+                }}
+            }}
+            if (map) {{
+                L.Control.HomeButton = L.Control.extend({{
+                    onAdd: function(map) {{
+                        var button = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                        button.innerHTML = '🏠';
+                        button.style.backgroundColor = 'white';
+                        button.style.width = '34px';
+                        button.style.height = '34px';
+                        button.style.lineHeight = '34px';
+                        button.style.textAlign = 'center';
+                        button.style.cursor = 'pointer';
+                        button.style.fontSize = '18px';
+                        button.title = 'Reset to initial view';
+                        button.onclick = function() {{
+                            map.setView([{center_lat}, {center_lon}], 10);
+                        }};
+                        return button;
+                    }}
+                }});
+                var homeControl = new L.Control.HomeButton({{ position: 'topleft' }});
+                homeControl.addTo(map);
+            }}
+        }});
+    </script>
+    '''
+    m.get_root().html.add_child(folium.Element(home_button))
+    
+    # CSS to fill iframe
+    fill_css = '''<style>
+        html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .folium-map, #map, div.folium-map {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+        }
+    </style>'''
+    m.get_root().html.add_child(folium.Element(fill_css))
+    
+    map_html = m._repr_html_()
+    
+    # Calculate correlation
+    corr = gdf[['D_share', demo_var]].corr().iloc[0, 1]
+    
+    stats = {
+        'race_name': RACE_METADATA.get(race_id, {}).get('display_name', race_id),
+        'demo_var': demo_label,
+        'correlation': float(corr),
+        'n_precincts': len(gdf),
+        'demo_min': float(gdf[demo_var].min()),
+        'demo_max': float(gdf[demo_var].max()),
+        'demo_median': float(gdf[demo_var].median()),
+    }
+    
+    return jsonify({'map': map_html, 'stats': stats})
+
+
+@app.route('/api/demographic_image/<path:filename>')
+def serve_demographic_image(filename):
+    """Serve demographic analysis images."""
+    from flask import send_file
+    
+    analysis_dir = PROJECT_ROOT / 'data' / 'processed' / 'demographic_analysis'
+    file_path = analysis_dir / filename
+    
+    if not file_path.exists():
+        return jsonify({'error': 'Image not found'}), 404
+    
+    return send_file(file_path, mimetype='image/png')
 
 
 if __name__ == '__main__':

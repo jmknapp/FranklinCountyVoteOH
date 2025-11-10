@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Columbus City Council District 7 Race Analysis (2025)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        
+        h1 {
+            color: #1a237e;
+            border-bottom: 4px solid #1a237e;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        
+        h2 {
+            color: #283593;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 5px solid #3f51b5;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #3949ab;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .highlight-box {
+            background: #e8eaf6;
+            border-left: 5px solid #3f51b5;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        
+        .note-box {
+            background: #fff3e0;
+            border-left: 5px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .results-box {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        
+        .results-box h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: #3f51b5;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        ul {
+            margin: 15px 0;
+            padding-left: 40px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        strong {
+            color: #1a237e;
+            font-weight: 600;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .stat-card h4 {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .stat-card .big-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .implications {
+            background: #fff9c4;
+            border-left: 5px solid #fbc02d;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        
+        .conclusion {
+            background: #f3e5f5;
+            border: 3px solid #9c27b0;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .key-findings {
+            counter-reset: finding-counter;
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .key-findings li {
+            counter-increment: finding-counter;
+            margin-bottom: 20px;
+            padding-left: 50px;
+            position: relative;
+        }
+        
+        .key-findings li::before {
+            content: counter(finding-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #3f51b5;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            h2 {
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Columbus City Council District 7 Race Analysis (2025)</h1>
+        
+        <h2>Overview</h2>
+        <p>
+            The 2025 Columbus City Council District 7 race between <strong>Jesse Vogel</strong> (progressive challenger, 
+            resident of District 7) and <strong>Tiara Ross</strong> (establishment Democrat, resident of District 7) 
+            was an <strong>at-large citywide election</strong> where all Columbus voters could participate, regardless 
+            of district. The results revealed a stark divide between the progressive Left and the traditional Democratic 
+            base: Ross, endorsed by the Franklin County Democratic Party, dominated among Black voters and working-class 
+            neighborhoods citywide, while Vogel's progressive challenge found support primarily in white, college-educated, 
+            gentrifying areas.
+        </p>
+        
+        <div class="note-box">
+            <strong>Note on Columbus City Council Elections:</strong> While candidates must reside in their district, 
+            the elections are at-large citywide races, meaning all Columbus voters participate in choosing each council member.
+        </div>
+        
+        <h2>Race Results</h2>
+        <div class="results-box">
+            <h3>Winner: Tiara Ross (Democratic establishment)</h3>
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <h4>Tiara Ross</h4>
+                    <div class="big-number">53,291</div>
+                    <div>50.8% of votes</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Jesse Vogel</h4>
+                    <div class="big-number">51,670</div>
+                    <div>49.2% of votes</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Margin</h4>
+                    <div class="big-number">1,621</div>
+                    <div>1.6 percentage points</div>
+                </div>
+            </div>
+            <p>
+                A close race that exposed deep fissures within Columbus Democrats. Ross's victory was built on the 
+                traditional Democratic base - Black voters and working-class neighborhoods - while Vogel's progressive 
+                challenge found its support among white, college-educated newcomers.
+            </p>
+        </div>
+        
+        <h2>Citywide Voting Base</h2>
+        <p>Since this was an <strong>at-large citywide election</strong>, all Columbus voters participated:</p>
+        
+        <div class="highlight-box">
+            <p><strong>Analysis Coverage:</strong> 548 Columbus precincts with complete demographic and voting data</p>
+            
+            <h4 style="margin-top: 20px; margin-bottom: 10px;">Vote Distribution by Precinct Type:</h4>
+            <ul>
+                <li>
+                    <strong>Majority-Black precincts</strong> (&gt;50% Black): 125 precincts, 19,436 votes cast
+                    <ul>
+                        <li>Average Vogel support: <strong>25.4%</strong></li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Other precincts</strong> (≤50% Black): 423 precincts, 85,525 votes cast
+                    <ul>
+                        <li>Average Vogel support: <strong>51.4%</strong></li>
+                    </ul>
+                </li>
+                <li><strong>Difference:</strong> 25.9 percentage point gap in Vogel support</li>
+            </ul>
+            
+            <p>The vast majority of votes (81.5%) came from non-majority-Black precincts, where Vogel performed much 
+            better but still lost overall.</p>
+        </div>
+        
+        <h2>Geographic Voting Patterns (Citywide)</h2>
+        
+        <h3>Majority-Black Precincts (125 precincts citywide, &gt;50% Black)</h3>
+        <p><strong>Average Vogel Support: 25.4%</strong> (citywide average across all majority-Black precincts)</p>
+        
+        <p>These precincts strongly favored Ross, with some precincts showing overwhelming support:</p>
+        
+        <p><strong>Strongest Ross Support:</strong></p>
+        <ul>
+            <li>COLUMBUS 13-B: 85.3% Ross (60.5% Black, 7.9% college)</li>
+            <li>COLUMBUS 06-A: 84.8% Ross (74.2% Black, 15.4% college)</li>
+            <li>COLUMBUS 13-C: 79.6% Ross (89.8% Black, 2.4% college)</li>
+            <li>COLUMBUS 06-C: 78.8% Ross (88.0% Black, 15.5% college)</li>
+        </ul>
+        
+        <p><strong>Exceptions (Vogel Won):</strong></p>
+        <ul>
+            <li>COLUMBUS 04-B: 56.0% Vogel (54.0% Black, <strong>25.9% college</strong>)</li>
+            <li>COLUMBUS 04-D: 53.4% Vogel (59.0% Black, 13.6% college)</li>
+        </ul>
+        
+        <p>The exceptions were precincts with higher educational attainment, suggesting education played a moderating role.</p>
+        
+        <h3>Non-Majority-Black Precincts (423 precincts citywide, ≤50% Black)</h3>
+        <p><strong>Average Vogel Support: 51.4%</strong> (citywide average)</p>
+        
+        <p>
+            Vogel performed significantly better in whiter, more educated precincts, building a coalition typical of 
+            progressive challenges to Democratic establishments: well-educated newcomers in gentrifying neighborhoods 
+            rather than the party's traditional working-class base. However, even winning these precincts 51.4% to 48.6% 
+            wasn't enough to overcome Ross's overwhelming margins in majority-Black precincts.
+        </p>
+        
+        <h2>Statistical Analysis</h2>
+        
+        <h3>Correlation with Vogel Support (n=548 Columbus precincts)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Correlation</th>
+                    <th>Interpretation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>% White (Non-Hispanic)</strong></td>
+                    <td><strong>+0.752</strong></td>
+                    <td>Very strong positive</td>
+                </tr>
+                <tr>
+                    <td><strong>% Black</strong></td>
+                    <td><strong>-0.744</strong></td>
+                    <td>Very strong negative</td>
+                </tr>
+                <tr>
+                    <td><strong>% College Degree</strong></td>
+                    <td><strong>+0.625</strong></td>
+                    <td>Strong positive</td>
+                </tr>
+                <tr>
+                    <td><strong>Median Income</strong></td>
+                    <td><strong>+0.006</strong></td>
+                    <td>No relationship</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3>Key Findings</h3>
+        <ol class="key-findings">
+            <li>
+                <strong>Race Was the Strongest Predictor:</strong> The % Black in a precinct had a correlation of 
+                -0.744 with Vogel support, meaning higher Black populations strongly predicted Ross support. This 
+                was slightly stronger than the % White correlation (+0.752).
+            </li>
+            <li>
+                <strong>Education Mattered, But Less Than Race:</strong> College education positively predicted 
+                Vogel support (r = +0.625), but this effect was weaker than the racial divide.
+            </li>
+            <li>
+                <strong>Income Was Irrelevant:</strong> Unlike presidential races where income often correlates 
+                with voting patterns, median income showed essentially zero correlation (r = +0.006) with candidate 
+                preference in this local race.
+            </li>
+            <li>
+                <strong>The Education-Race Interaction:</strong> In majority-Black precincts, those with higher 
+                education levels (like COLUMBUS 04-B at 25.9% college) were more likely to support Vogel, suggesting 
+                education moderated but did not eliminate the racial voting divide.
+            </li>
+        </ol>
+        
+        <h2>Comparison to Other Races</h2>
+        
+        <h3>Presidential Race (2024, Franklin County)</h3>
+        <p><strong>Correlations with Democratic (Harris) Support:</strong></p>
+        <ul>
+            <li>% Black: <strong>+0.542</strong> (positive)</li>
+            <li>% White: <strong>-0.507</strong> (negative)</li>
+            <li>Median Income: <strong>-0.316</strong> (negative)</li>
+        </ul>
+        
+        <div class="highlight-box">
+            <p>
+                <strong>Key Difference:</strong> In presidential races, Black voters overwhelmingly support Democratic 
+                candidates. In CD7, they continued to support the Democratic candidate - but the <em>establishment</em> 
+                Democrat (Ross), not the progressive challenger (Vogel). This represents an intra-party divide, not a 
+                left-right ideological shift.
+            </p>
+        </div>
+        
+        <h3>Abortion Rights Issue 1 (2023)</h3>
+        <p><strong>Correlations with "Yes" (Progressive) Vote:</strong></p>
+        <ul>
+            <li>% College: <strong>+0.172</strong> (positive)</li>
+            <li>% Black: <strong>+0.237</strong> (positive)</li>
+        </ul>
+        <p>
+            Even on ballot issues, Black voters aligned with progressive positions. The CD7 race represents a 
+            significant departure from this pattern.
+        </p>
+        
+        <h2>Possible Explanations</h2>
+        
+        <h3>1. The Democratic "Machine" vs. Progressive Insurgency</h3>
+        <p>
+            Tiara Ross had the endorsement of the Franklin County Democratic Party, giving her institutional support, 
+            established relationships with Black community leaders, and the resources of the local party apparatus. 
+            Jesse Vogel ran as a progressive challenger, explicitly or implicitly critiquing the Columbus Democratic 
+            establishment - a machine that progressives argue prioritizes developer interests, downtown business elites, 
+            and political patronage over community needs.
+        </p>
+        
+        <h3>2. Trust and Community Ties</h3>
+        <p>
+            Black voters in District 7 appear to have trusted the establishment Democrat they know over the progressive 
+            challenger they don't. Ross's connection to the Democratic Party establishment - often criticized by the 
+            Left as corrupt or compromised - may have been a feature, not a bug, for voters who see that establishment 
+            as responsive to their community.
+        </p>
+        
+        <h3>3. Skepticism of Progressive Newcomers</h3>
+        <p>The voting pattern suggests that working-class Black residents may view progressive activists with skepticism, 
+        seeing them as:</p>
+        <ul>
+            <li>Outsiders who don't understand the community</li>
+            <li>Gentrifiers whose "progressive" values mask displacement</li>
+            <li>Idealists whose policy preferences (e.g., police reform, development opposition) don't align with 
+                community priorities around safety and economic opportunity</li>
+        </ul>
+        
+        <h3>4. Different Definitions of "Progressive"</h3>
+        <p>
+            What progressives criticize as the Democratic "machine" - patronage, relationships with business interests, 
+            pragmatic deal-making - may be seen by working-class Black voters as how things get done. Meanwhile, the 
+            progressive platform - heavy on social justice rhetoric and opposition to establishment power - may resonate 
+            more with college-educated activists than with residents focused on material needs.
+        </p>
+        
+        <h3>5. Gentrification as the Subtext</h3>
+        <p>The stark demographic divide suggests this race was really about neighborhood change:</p>
+        <ul>
+            <li><strong>Vogel's Coalition:</strong> White, educated newcomers who identify as progressive and want 
+                council representation that reflects their values</li>
+            <li><strong>Ross's Coalition:</strong> Long-term residents, particularly Black voters, who want representation 
+                that understands their history and won't accelerate displacement</li>
+        </ul>
+        <p>
+            The irony: the "progressive" candidate's support base was the gentrifying population, while the 
+            "establishment machine" candidate represented community continuity.
+        </p>
+        
+        <h2>Historical Context</h2>
+        <p>This race reveals tensions between two competing visions of Democratic politics:</p>
+        
+        <div class="highlight-box">
+            <p><strong>National Progressive Coalition</strong> (presidential races, ballot issues):</p>
+            <ul>
+                <li>Strong support from communities of color</li>
+                <li>Strong support from young, educated voters</li>
+                <li>Unified against Republicans</li>
+            </ul>
+            
+            <p><strong>Local Progressive Insurgency</strong> (challenging Democratic establishments):</p>
+            <ul>
+                <li>Support from college-educated activists and professionals</li>
+                <li>Opposition from traditional Democratic base (Black voters, working class)</li>
+                <li>Divided within the Democratic Party</li>
+            </ul>
+            
+            <p><strong>CD7 Reality:</strong></p>
+            <ul>
+                <li>Vogel (progressive challenger): Strong support from white, educated gentrifiers</li>
+                <li>Ross (establishment Democrat): Strong support from Black, working-class neighborhoods</li>
+                <li>The "progressive" challenge came from the demographic group most associated with displacement, 
+                    while the "machine" candidate represented community stability</li>
+            </ul>
+        </div>
+        
+        <h2>Implications</h2>
+        
+        <div class="implications">
+            <h3>For Progressive Politics</h3>
+            <ol>
+                <li>
+                    <strong>The Progressive Paradox:</strong> Challenging the Democratic establishment may alienate 
+                    the party's traditional base, creating a coalition that looks more like gentrification than justice.
+                </li>
+                <li>
+                    <strong>Trust Matters More Than Ideology:</strong> Working-class Black voters chose the "machine" 
+                    Democrat they trust over the progressive who claimed to represent their interests but drew support 
+                    from gentrifying neighborhoods.
+                </li>
+                <li>
+                    <strong>Two Definitions of "Progressive":</strong>
+                    <ul>
+                        <li><strong>National progressivism:</strong> Multi-racial coalition against Republicans 
+                            (works in presidential races)</li>
+                        <li><strong>Local progressivism:</strong> Educated insurgents against Democratic establishments 
+                            (splits the base)</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="implications">
+            <h3>For Understanding Columbus</h3>
+            <p>The CD7 race reveals deep tensions in Columbus's rapidly changing neighborhoods:</p>
+            <ol>
+                <li>
+                    <strong>The Democratic Machine Has a Base:</strong> What progressives criticize as the Columbus 
+                    Democratic "machine" retains strong support from Black voters and working-class communities who 
+                    see it as responsive to their needs.
+                </li>
+                <li>
+                    <strong>Gentrification Creates Political Divides:</strong> Newcomers and longtime residents have 
+                    different political priorities, even when both identify as Democrats or progressives.
+                </li>
+                <li>
+                    <strong>Class and Education Trump Shared Racial Politics:</strong> College-educated activists 
+                    don't automatically speak for working-class communities of color, even on "progressive" issues.
+                </li>
+                <li>
+                    <strong>Progressive Challenges Face Legitimacy Questions:</strong> When your coalition is whiter 
+                    and more educated than your opponent's, claims to represent marginalized communities ring hollow.
+                </li>
+            </ol>
+        </div>
+        
+        <h2>Demographic Breakdown: Citywide Majority-Black Precincts</h2>
+        <p><strong>125 Precincts (&gt;50% Black) across Columbus</strong></p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Range</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>% Black</td>
+                    <td>50.5% - 91.9%</td>
+                    <td>Wide variation</td>
+                </tr>
+                <tr>
+                    <td>% College</td>
+                    <td>2.4% - 31.6%</td>
+                    <td>Most under 15%</td>
+                </tr>
+                <tr>
+                    <td>Vogel Support</td>
+                    <td>0% - 56.0%</td>
+                    <td>Citywide average: 25.4%</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <p><strong>Highest % Black Precincts</strong> (all strongly supported Ross):</p>
+        <ul>
+            <li>COLUMBUS 07-C: 91.9% Black → 31.3% Vogel</li>
+            <li>COLUMBUS 13-C: 89.8% Black → 20.4% Vogel</li>
+            <li>COLUMBUS 06-C: 88.0% Black → 21.2% Vogel</li>
+        </ul>
+        
+        <p>
+            <strong>Education as Moderator:</strong> Precincts with higher education showed less extreme Ross support, 
+            but even educated majority-Black precincts often still favored Ross.
+        </p>
+        
+        <h2>Conclusion</h2>
+        <div class="conclusion">
+            <p>
+                The Columbus City Council District 7 race demonstrates that progressive challenges to Democratic 
+                establishments face a fundamental problem: their coalition often consists of the very people 
+                displacing the communities they claim to champion.
+            </p>
+            
+            <h3 style="margin-top: 25px;">Key Takeaways:</h3>
+            <ol class="key-findings">
+                <li>
+                    <strong>The Democratic Base Chose the Machine:</strong> Black voters citywide backed the Franklin 
+                    County Democratic Party's endorsed candidate by a 75-25 margin in majority-Black precincts, 
+                    decisively rejecting the progressive challenger despite his ostensibly more "progressive" platform.
+                </li>
+                <li>
+                    <strong>Gentrification Created an Inverted Coalition:</strong> The progressive challenger's support 
+                    came from white, college-educated newcomers - exactly the demographic associated with displacement - 
+                    while the "establishment machine" candidate represented community continuity for longtime Black residents.
+                </li>
+                <li>
+                    <strong>Education Trumped Race:</strong> While race was the strongest predictor of voting 
+                    (r = -0.744 with % Black), the pattern was driven by class and education. College-educated voters 
+                    of all races were more likely to support Vogel, but working-class Black voters overwhelmingly chose Ross.
+                </li>
+                <li>
+                    <strong>Two Meanings of "Progressive":</strong>
+                    <ul>
+                        <li>In national politics, "progressive" means multi-racial coalition against Republicans</li>
+                        <li>In local politics, "progressive" often means educated insurgents against Democratic establishments</li>
+                        <li>These two definitions create incompatible coalitions</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Trust and Legitimacy Matter:</strong> The Columbus Democratic "machine" - criticized by 
+                    progressives as corrupt and beholden to developer interests - retains deep trust among Black voters 
+                    who see it as delivering for their communities. A progressive challenge from gentrifying neighborhoods 
+                    lacks legitimacy.
+                </li>
+            </ol>
+            
+            <p style="margin-top: 25px;">
+                <strong>The Broader Pattern:</strong> This race may represent a template for urban Democratic politics 
+                in rapidly gentrifying cities. As neighborhoods change, progressive challenges to establishment Democrats 
+                increasingly pit newcomer activists against traditional working-class bases, with the ultimate irony that 
+                the "progressive" position gets associated with displacement rather than justice.
+            </p>
+            
+            <p>
+                The race reveals that in Columbus, as in many cities, the fault line within the Democratic Party is not 
+                primarily ideological - both candidates are liberals - but rather about community, trust, class, and who 
+                has the right to speak for neighborhoods in flux.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <hr style="margin-bottom: 20px;">
+            <p><strong>Data Sources:</strong></p>
+            <ul>
+                <li>2025 Columbus City Council District 7 election results (BOE)</li>
+                <li>2020 Census demographics (ACS 5-year estimates)</li>
+                <li>2025 Columbus precinct boundaries</li>
+                <li>Analysis based on 548 Columbus precincts with complete demographic and voting data</li>
+            </ul>
+            <p style="margin-top: 20px;"><strong>Date:</strong> November 9, 2025</p>
+        </div>
+    </div>
+</body>
+</html>
+
+

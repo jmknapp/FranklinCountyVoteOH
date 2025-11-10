@@ -55,6 +55,19 @@ def main() -> None:
             "BALLOTS CAST TOTAL": "ballots",
         }
     )
+    
+    # Fix precinct names to match shapefile format (zero-pad ward numbers)
+    def fix_precinct_name(name):
+        """Zero-pad single-digit ward numbers to match shapefile format."""
+        import re
+        # Pattern: CITY #-LETTER (e.g., "BEXLEY 1-A" -> "BEXLEY 01-A")
+        match = re.match(r'^(.+\s)(\d)(-[A-Z])$', str(name))
+        if match:
+            return f"{match.group(1)}{match.group(2).zfill(2)}{match.group(3)}"
+        return name
+    
+    turnout["PRECINCT"] = turnout["PRECINCT"].apply(fix_precinct_name)
+    
     turnout["D_votes"] = turnout["ballots"]
     turnout["R_votes"] = turnout["non_voters"]
 
