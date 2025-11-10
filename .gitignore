@@ -64,6 +64,13 @@ data/processed/*
 *.log
 *.png
 *.html
+# Except analysis HTML documents
+!docs/CD7_RACE_ANALYSIS.html
+!docs/CD7_RACE_ANALYSIS_CONCISE.html
+!docs/cd7_election_map.html
+!docs/test.html
+!webapp/templates/*.html
+!.htaccess
 
 # OS
 .DS_Store

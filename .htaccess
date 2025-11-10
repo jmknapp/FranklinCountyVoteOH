@@ -1,0 +1,16 @@
+# Ensure HTML files are served with correct MIME type
+<IfModule mod_mime.c>
+    AddType text/html .html .htm
+</IfModule>
+
+# Enable following symlinks
+Options +FollowSymLinks
+
+# Allow access to HTML files
+<FilesMatch "\.(html|htm)$">
+    Require all granted
+</FilesMatch>
+
+# Character encoding
+AddDefaultCharset UTF-8
+

@@ -1,13 +1,13 @@
 #!/bin/bash
 #
 # Deploy the Franklin County Vote Analysis web application
-# Deploys to /var/www/html/ionic/fcvote for web access
+# Deploys to /var/www/html/columbusvoter for web access
 #
 
 set -e  # Exit on error
 
 # Configuration
-DEPLOY_DIR="/var/www/html/ionic/fcvote"
+DEPLOY_DIR="/var/www/html/columbusvoter"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "========================================="
@@ -47,11 +47,13 @@ rsync -av --delete "$PROJECT_ROOT/data/processed/" "$DEPLOY_DIR/data/processed/"
 echo "Copying documentation and analysis pages..."
 cp "$PROJECT_ROOT/docs/CD7_RACE_ANALYSIS.html" "$DEPLOY_DIR/docs/"
 cp "$PROJECT_ROOT/docs/CD7_RACE_ANALYSIS_CONCISE.md" "$DEPLOY_DIR/docs/"
+cp "$PROJECT_ROOT/docs/CD7_RACE_ANALYSIS_CONCISE.html" "$DEPLOY_DIR/docs/"
 cp "$PROJECT_ROOT/docs/cd7_election_map.html" "$DEPLOY_DIR/docs/"
 cp "$PROJECT_ROOT/README.md" "$DEPLOY_DIR/docs/"
 
-# Copy requirements.txt for reference
+# Copy requirements.txt and .htaccess for reference
 cp "$PROJECT_ROOT/requirements.txt" "$DEPLOY_DIR/"
+cp "$PROJECT_ROOT/.htaccess" "$DEPLOY_DIR/" 2>/dev/null || true
 
 # Create/update symlinks for easy access
 echo "Creating convenience symlinks..."
@@ -161,27 +163,32 @@ cat > "$DEPLOY_DIR/index.html" << 'EOF'
                 <p>Full-page interactive map of CD7 election results by precinct</p>
             </a>
             
-            <a href="/fcvote/compare" class="link-card" target="_blank">
+            <a href="docs/CD7_RACE_ANALYSIS_CONCISE.html" class="link-card">
+                <h2>📄 CD7 Analysis (Concise)</h2>
+                <p>Streamlined version of the CD7 analysis with key findings</p>
+            </a>
+            
+            <a href="/columbusvoter/compare" class="link-card" target="_blank">
                 <h2>🔀 Compare Races</h2>
                 <p>Interactive web app to compare any two races or ballot issues across years</p>
             </a>
             
-            <a href="/fcvote/onemap" class="link-card" target="_blank">
+            <a href="/columbusvoter/onemap" class="link-card" target="_blank">
                 <h2>🎨 Single Map Viewer</h2>
                 <p>View individual race results with customizable color schemes</p>
             </a>
             
-            <a href="/fcvote/cluster" class="link-card" target="_blank">
+            <a href="/columbusvoter/cluster" class="link-card" target="_blank">
                 <h2>📍 Geographic Clustering</h2>
                 <p>Analyze spatial patterns and voting clusters using Moran's I</p>
             </a>
             
-            <a href="/fcvote/demographics" class="link-card" target="_blank">
+            <a href="/columbusvoter/demographics" class="link-card" target="_blank">
                 <h2>👥 Demographics Analysis</h2>
                 <p>Explore correlations between demographics and voting patterns</p>
             </a>
             
-            <a href="/fcvote/cartogram" class="link-card" target="_blank">
+            <a href="/columbusvoter/cartogram" class="link-card" target="_blank">
                 <h2>📐 Turnout Cartogram</h2>
                 <p>Visualize precincts sized by voter turnout</p>
             </a>
@@ -204,9 +211,10 @@ echo ""
 echo "📁 Files deployed to: $DEPLOY_DIR"
 echo ""
 echo "🌐 Access points:"
-echo "   Main page:      http://localhost/ionic/fcvote/"
-echo "   CD7 Analysis:   http://localhost/ionic/fcvote/docs/CD7_RACE_ANALYSIS.html"
-echo "   Election Map:   http://localhost/ionic/fcvote/docs/cd7_election_map.html"
+echo "   Main page:      http://localhost/columbusvoter/"
+echo "   CD7 Analysis:   http://localhost/columbusvoter/docs/CD7_RACE_ANALYSIS.html"
+echo "   CD7 Concise:    http://localhost/columbusvoter/docs/CD7_RACE_ANALYSIS_CONCISE.html"
+echo "   Election Map:   http://localhost/columbusvoter/docs/cd7_election_map.html"
 echo ""
 echo "🚀 To start the Flask app:"
 echo "   cd $DEPLOY_DIR"
