@@ -97,7 +97,7 @@ def main():
                 'fillColor': color,
                 'color': '#666666',
                 'weight': 0.5,
-                'fillOpacity': 0.7
+                'fillOpacity': 0.5  # Reduced from 0.7 to 0.5 for better street visibility
             },
             tooltip=folium.Tooltip(tooltip_text)
         ).add_to(m)
