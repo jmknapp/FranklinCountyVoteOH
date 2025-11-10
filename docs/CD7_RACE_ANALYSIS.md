@@ -15,6 +15,28 @@ The 2025 Columbus City Council District 7 race between **Jesse Vogel** (progress
 
 A close race that exposed deep fissures within Columbus Democrats. Ross's victory was built on the traditional Democratic base - Black voters and working-class neighborhoods - while Vogel's progressive challenge found its support among white, college-educated newcomers.
 
+## Columbus City Council Districts
+
+Columbus is divided into nine City Council districts. While Council elections are at-large citywide (all Columbus voters participate regardless of district), understanding the demographic composition and voting patterns of each district provides insight into the city's political geography.
+
+![Council Districts Demographics and Vogel Support](../data/processed/district_analysis/council_districts_demographics_and_vogel.png)
+
+### District Results Summary
+
+| District | Winner | Vogel % | Demographics |
+|----------|--------|---------|--------------|
+| District 1 | **Ross** | 47.7% | 64% White, 18% Black |
+| District 2 | **Vogel** | 53.1% | 76% White, 6% Black |
+| District 3 | **Vogel** | 67.5% | 78% White, 6% Black |
+| District 4 | **Ross** | 44.4% | 36% White, 43% Black |
+| District 5 | **Ross** | 36.4% | 49% White, 36% Black |
+| District 6 | **Vogel** | 50.6% | 67% White, 15% Black, 11% Hispanic |
+| **District 7** | **Vogel** | **61.2%** | **63% White, 24% Black** |
+| District 8 | **Ross** | 35.4% | 48% White, 40% Black |
+| District 9 | **Ross** | 28.6% | 40% White, 45% Black |
+
+**Key Pattern**: Vogel won in the four whitest districts (2, 3, 6, 7), while Ross dominated in districts with higher Black populations (4, 5, 8, 9). District 7 showed the strongest Vogel support (61.2%) with a mixed demographic profile (63% White, 24% Black).
+
 ## Citywide Voting Base
 
 Since this was an **at-large citywide election**, all Columbus voters participated:
