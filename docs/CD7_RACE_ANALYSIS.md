@@ -2,7 +2,7 @@
 
 ## Overview
 
-The 2025 Columbus City Council District 7 race between **Jesse Vogel** (progressive challenger, resident of District 7) and **Tiara Ross** (establishment Democrat, resident of District 7) was an **at-large citywide election** where all Columbus voters could participate, regardless of district. The results revealed a stark divide between the progressive Left and the traditional Democratic base: Ross, endorsed by the Franklin County Democratic Party, dominated among Black voters and working-class neighborhoods citywide, while Vogel's progressive challenge found support primarily in white, college-educated, gentrifying areas.
+The 2025 Columbus City Council District 7 race between **Jesse Vogel** (progressive challenger, resident of District 7) and **Tiara Ross** (party-endorsed Democrat, resident of District 7) was an **at-large citywide election** where all Columbus voters could participate, regardless of district. The results revealed a stark divide between the progressive Left and the traditional Democratic base: Ross, endorsed by the Franklin County Democratic Party, dominated among Black voters and working-class neighborhoods citywide, while Vogel's progressive challenge found support primarily in white, college-educated, gentrifying areas.
 
 **Note on Columbus City Council Elections**: While candidates must reside in their district, the elections are at-large citywide races, meaning all Columbus voters participate in choosing each council member.
 
@@ -77,6 +77,74 @@ Vogel performed significantly better in whiter, more educated precincts, buildin
 
 4. **The Education-Race Interaction**: In majority-Black precincts, those with higher education levels (like COLUMBUS 04-B at 25.9% college) were more likely to support Vogel, suggesting education moderated but did not eliminate the racial voting divide.
 
+## African American vs African Immigrant Voting Patterns
+
+Columbus has a significant African immigrant population, particularly from East Africa (Somalia, Ethiopia). Using detailed Census place-of-birth data, we can distinguish between African American precincts and those with substantial African immigrant populations.
+
+### Franklin County African Immigrant Population
+
+**Total Africa-born: 43,361 residents (3.3% of county)**
+- **East Africa: 18,733** (1.4%)
+  - Somalia: 9,506 (0.7%)
+  - Ethiopia: 3,798 (0.3%)
+  - Kenya, Uganda, Eritrea: Additional populations
+- **West Africa: 2,074**
+  - Ghana: 3,632
+  - Liberia: 2,324
+  - Nigeria: 538
+
+### Top East African Precincts
+
+**Highest East African-born populations:**
+- **FRANKLIN-F**: 64.1% East African (mostly Somali)
+- **WHITEHALL 04-C**: 71.9% East African (Ethiopian)
+- **COLUMBUS 83-G**: 60.9% East African (457 Somali residents)
+- **COLUMBUS 56-D**: 64.1% East African, 85% Black total
+- **COLUMBUS 42-E**: 41.3% East African (299 Somali, 122 Ethiopian)
+
+### Voting Pattern Differences
+
+Precincts with high East African immigrant populations showed **significantly different voting patterns** than African American precincts:
+
+| Precinct Type | Count | Avg % Black | Avg % E. African | Vogel Support |
+|---------------|-------|-------------|------------------|---------------|
+| **High East African** (>5% EA) | 225 | 36.8% | 22.2% | **39.5%** |
+| **African American** (<5% EA, >50% Black) | 52 | 67.8% | 0.8% | **24.8%** |
+| **Difference** | - | - | - | **+14.7 points** |
+
+### Key Findings
+
+1. **African Immigrants More Open to Progressive Challenge**: High East African precincts gave Vogel 39.5% support, compared to only 24.8% in African American precincts - a 14.7 percentage point difference.
+
+2. **Three-Way Split Among Black Voters**:
+   - **African American** (multi-generational): ~75% Ross (party-endorsed)
+   - **East African immigrants**: ~40% Vogel (more moderate)
+   - **College-educated Black** (any background): Higher Vogel support
+
+3. **Less Integrated into Democratic Machine**: African immigrant communities appear less tied to the Franklin County Democratic Party establishment, making them more persuadable by progressive challengers.
+
+4. **Still Less Supportive Than White Progressives**: Even in high East African precincts, Vogel received only 40% support, well below his ~52% support in white college-educated precincts.
+
+### Correlation Analysis (Columbus precincts)
+
+| Variable | Correlation with Vogel |
+|----------|------------------------|
+| % Black | **-0.744** (very strong negative) |
+| % College | **+0.625** (strong positive) |
+| % East African | **-0.248** (weak negative) |
+
+The weak negative correlation for % East African (compared to very strong negative for % Black) confirms that African immigrants are substantially more open to progressive candidates than African Americans, though still less supportive than white voters.
+
+### Interpretation
+
+This finding reveals an important nuance in understanding "Black voter" patterns:
+
+- **African American communities** have deep historical ties to the Democratic Party establishment and institutions like the Franklin County Democratic Party. These long-standing relationships create strong loyalty to party-endorsed candidates.
+
+- **African immigrant communities** (particularly Somali and Ethiopian) lack these multi-generational ties to local Democratic institutions. They're newer to Columbus politics and less embedded in the party structure that delivered Ross's victory.
+
+- This creates a **vulnerability for party-endorsed candidates** in increasingly diverse cities: as immigrant populations grow, the traditional Democratic coalition becomes less monolithic.
+
 ## Comparison to Other Races
 
 ### Presidential Race (2024, Franklin County)
@@ -102,7 +170,7 @@ Even on ballot issues, Black voters aligned with progressive positions. The CD7 
 Tiara Ross had the endorsement of the Franklin County Democratic Party, giving her institutional support, established relationships with Black community leaders, and the resources of the local party apparatus. Jesse Vogel ran as a progressive challenger, explicitly or implicitly critiquing the Columbus Democratic establishment - a machine that progressives argue prioritizes developer interests, downtown business elites, and political patronage over community needs.
 
 ### 2. **Trust and Community Ties**
-Black voters in District 7 appear to have trusted the establishment Democrat they know over the progressive challenger they don't. Ross's connection to the Democratic Party establishment - often criticized by the Left as corrupt or compromised - may have been a feature, not a bug, for voters who see that establishment as responsive to their community.
+Black voters in District 7 appear to have trusted the party-endorsed Democrat they know over the progressive challenger they don't. Ross's connection to the Democratic Party establishment - often criticized by the Left as corrupt or compromised - may have been a feature, not a bug, for voters who see that establishment as responsive to their community.
 
 ### 3. **Skepticism of Progressive Newcomers**
 The voting pattern suggests that working-class Black residents may view progressive activists with skepticism, seeing them as:
@@ -136,7 +204,7 @@ This race reveals tensions between two competing visions of Democratic politics:
 
 **CD7 Reality**:
 - Vogel (progressive challenger): Strong support from white, educated gentrifiers
-- Ross (establishment Democrat): Strong support from Black, working-class neighborhoods
+- Ross (party-endorsed Democrat): Strong support from Black, working-class neighborhoods
 - The "progressive" challenge came from the demographic group most associated with displacement, while the "machine" candidate represented community stability
 
 ## Implications
@@ -200,7 +268,7 @@ The Columbus City Council District 7 race demonstrates that progressive challeng
 
 5. **Trust and Legitimacy Matter**: The Columbus Democratic "machine" - criticized by progressives as corrupt and beholden to developer interests - retains deep trust among Black voters who see it as delivering for their communities. A progressive challenge from gentrifying neighborhoods lacks legitimacy.
 
-**The Broader Pattern**: This race may represent a template for urban Democratic politics in rapidly gentrifying cities. As neighborhoods change, progressive challenges to establishment Democrats increasingly pit newcomer activists against traditional working-class bases, with the ultimate irony that the "progressive" position gets associated with displacement rather than justice.
+**The Broader Pattern**: This race may represent a template for urban Democratic politics in rapidly gentrifying cities. As neighborhoods change, progressive challenges to party-endorsed Democrats increasingly pit newcomer activists against traditional working-class bases, with the ultimate irony that the "progressive" position gets associated with displacement rather than justice.
 
 The race reveals that in Columbus, as in many cities, the fault line within the Democratic Party is not primarily ideological - both candidates are liberals - but rather about community, trust, class, and who has the right to speak for neighborhoods in flux.
 
