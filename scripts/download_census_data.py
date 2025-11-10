@@ -75,13 +75,13 @@ def download_acs_demographics(year=2020):
     """
     Download ACS 5-year demographic data at block group level.
     
-    Note: Detailed demographics are only available at block group level,
-    not individual blocks. We'll use block groups for demographics and
-    blocks for precise geographic crosswalk.
+    Note: Most demographics are available at block group level, but detailed
+    place-of-birth data (African ethnicity) is only available at tract level.
+    We'll download both and merge them.
     """
     logger.info(f"Downloading ACS {year} 5-year demographics for Franklin County...")
     
-    # Key demographic variables from ACS
+    # Key demographic variables from ACS (available at block group level)
     # B01003_001E: Total population
     # B19013_001E: Median household income
     # B15003_022E: Bachelor's degree
@@ -94,6 +94,24 @@ def download_acs_demographics(year=2020):
     # B03002_012E: Hispanic or Latino
     # B03002_001E: Total race/ethnicity universe
     # B01002_001E: Median age
+    # B05002_001E: Nativity universe
+    # B05002_013E: Foreign born
+    # B05006_001E: Place of birth universe
+    # B05006_091E: Born in Africa
+    # B05006_092E: Eastern Africa
+    # B05006_093E: Eritrea
+    # B05006_094E: Ethiopia
+    # B05006_095E: Kenya
+    # B05006_096E: Somalia
+    # B05006_097E: Uganda
+    # B05006_098E: Zimbabwe
+    # B05006_099E: Other Eastern Africa
+    # B05001_006E: Not a U.S. citizen
+    # B16001_001E: Language universe
+    # B16001_003E: Spanish
+    # B16001_006E: Other Indo-European languages
+    # B16001_009E: Asian and Pacific Island languages
+    # B16001_012E: Other languages (includes African languages)
     
     variables = [
         'B01003_001E',  # Total population
@@ -108,6 +126,24 @@ def download_acs_demographics(year=2020):
         'B03002_004E',  # Black
         'B03002_012E',  # Hispanic
         'B01002_001E',  # Median age
+        'B05002_001E',  # Nativity universe
+        'B05002_013E',  # Foreign born
+        'B05006_001E',  # Place of birth universe
+        'B05006_091E',  # Born in Africa
+        'B05006_092E',  # Eastern Africa (total)
+        'B05006_093E',  # Eritrea
+        'B05006_094E',  # Ethiopia
+        'B05006_095E',  # Kenya
+        'B05006_096E',  # Somalia
+        'B05006_097E',  # Uganda
+        'B05006_098E',  # Zimbabwe
+        'B05006_099E',  # Other Eastern Africa
+        'B05001_006E',  # Not a U.S. citizen
+        'B16001_001E',  # Language universe
+        'B16001_003E',  # Spanish
+        'B16001_006E',  # Other Indo-European
+        'B16001_009E',  # Asian/Pacific Island
+        'B16001_012E',  # Other languages (African)
     ]
     
     # ACS 5-year API endpoint (block group level)
@@ -148,18 +184,44 @@ def download_acs_demographics(year=2020):
     df['pct_white'] = df['B03002_003E'] / df['B03002_001E'] * 100
     df['pct_black'] = df['B03002_004E'] / df['B03002_001E'] * 100
     df['pct_hispanic'] = df['B03002_012E'] / df['B03002_001E'] * 100
+    df['pct_foreign_born'] = df['B05002_013E'] / df['B05002_001E'] * 100
+    df['pct_africa_born'] = df['B05006_091E'] / df['B05006_001E'] * 100
+    df['pct_east_africa_born'] = df['B05006_092E'] / df['B05006_001E'] * 100
+    df['pct_somalia_born'] = df['B05006_096E'] / df['B05006_001E'] * 100
+    df['pct_ethiopia_born'] = df['B05006_094E'] / df['B05006_001E'] * 100
+    df['pct_noncitizen'] = df['B05001_006E'] / df['B05006_001E'] * 100
+    df['pct_other_language'] = df['B16001_012E'] / df['B16001_001E'] * 100  # Includes African languages
     
     # Rename for clarity
     df = df.rename(columns={
         'B01003_001E': 'total_pop',
         'B19013_001E': 'median_income',
         'B01002_001E': 'median_age',
+        'B05002_013E': 'foreign_born_pop',
+        'B05006_091E': 'africa_born_pop',
+        'B05006_092E': 'east_africa_born_pop',
+        'B05006_093E': 'eritrea_born_pop',
+        'B05006_094E': 'ethiopia_born_pop',
+        'B05006_095E': 'kenya_born_pop',
+        'B05006_096E': 'somalia_born_pop',
+        'B05006_097E': 'uganda_born_pop',
+        'B05006_098E': 'zimbabwe_born_pop',
+        'B05006_099E': 'other_east_africa_pop',
+        'B05001_006E': 'noncitizen_pop',
+        'B16001_012E': 'other_language_pop',
     })
     
     # Select final columns
     output_cols = [
         'GEOID', 'total_pop', 'median_income', 'median_age',
-        'pct_college', 'pct_white', 'pct_black', 'pct_hispanic'
+        'pct_college', 'pct_white', 'pct_black', 'pct_hispanic',
+        'pct_foreign_born', 'pct_africa_born', 'pct_east_africa_born', 
+        'pct_somalia_born', 'pct_ethiopia_born',
+        'pct_noncitizen', 'pct_other_language',
+        'foreign_born_pop', 'africa_born_pop', 'east_africa_born_pop',
+        'somalia_born_pop', 'ethiopia_born_pop', 'eritrea_born_pop',
+        'kenya_born_pop', 'uganda_born_pop', 'zimbabwe_born_pop', 'other_east_africa_pop',
+        'noncitizen_pop', 'other_language_pop'
     ]
     df = df[output_cols]
     
